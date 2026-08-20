@@ -99,26 +99,13 @@ body {
    ========================= */
 
 .navigation-panel {
-    --bs-offcanvas-width: 250px;
+    --bs-offcanvas-width: 240px;
 
     border: none;
+
     box-shadow: 8px 0 30px rgba(0, 0, 0, 0.08);
 }
 
-#menu {
-    padding: 12px;
-}
-
-.offcanvas-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-}
-
-
-/* =========================
-   Navigation links
-   ========================= */
 
 .navigation-link {
     display: flex;
@@ -140,20 +127,22 @@ body {
         color 0.15s ease;
 }
 
+
 .navigation-link i {
     width: 20px;
     font-size: 1.1rem;
 }
+
 
 .navigation-link:hover {
     background-color: #f1f3f5;
     color: #212529;
 }
 
+
 .navigation-link:active {
     background-color: #e9ecef;
 }
-
 
 /* =========================
    Custom colors

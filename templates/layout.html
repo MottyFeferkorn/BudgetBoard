@@ -39,13 +39,14 @@
 
                     <!-- Hamburger -->
                     {#{% if session.get("user_id") %}#}
+                        <!-- Header hamburger -->
                         <button
                             class="btn menu-button"
                             type="button"
-                            data-bs-toggle="collapse"
+                            data-bs-toggle="offcanvas"
                             data-bs-target="#navigation"
-                            aria-expanded="false"
                             aria-controls="navigation"
+                            aria-label="Open navigation"
                         >
                             <i class="bi bi-list fs-4"></i>
                         </button>
@@ -99,14 +100,16 @@
 
     <!-- Sidebar -->
     {#{% if session.get("user_id") %}#}
-        <!--<div
+
+        <!-- Sidebar -->
+        <div
             class="offcanvas offcanvas-start navigation-panel"
             tabindex="-1"
             id="navigation"
             aria-labelledby="navigationLabel"
         >
 
-             Sidebar header
+            <!-- Sidebar header -->
             <div class="offcanvas-header px-3 pt-4">
 
                 <div class="small text-secondary" id="menu">
@@ -122,58 +125,54 @@
                     <i class="bi bi-list fs-4"></i>
                 </button>
 
-            </div>-->
+            </div>
 
 
             <!-- Navigation links -->
-            <div class="collapse floating-navigation" id="navigation">
+            <div class="offcanvas-body px-3">
 
-                <div class="navigation-card">
+                <nav class="d-flex flex-column gap-1">
 
-                    <nav class="d-flex flex-column gap-1">
+                    <a href="/" class="navigation-link">
+                        <i class="bi bi-grid-1x2-fill text-primary"></i>
+                        <span>Dashboard</span>
+                    </a>
 
-                        <a href="/" class="navigation-link">
-                            <i class="bi bi-grid-1x2-fill text-primary"></i>
-                            <span>Dashboard</span>
-                        </a>
+                    <a href="/plan" class="navigation-link">
+                        <i class="bi bi-calendar2-check text-purple"></i>
+                        <span>Plan</span>
+                    </a>
 
-                        <a href="/plan" class="navigation-link">
-                            <i class="bi bi-calendar2-check text-purple"></i>
-                            <span>Plan</span>
-                        </a>
+                    <a href="/income" class="navigation-link">
+                        <i class="bi bi-arrow-down-circle text-success"></i>
+                        <span>Income</span>
+                    </a>
 
-                        <a href="/income" class="navigation-link">
-                            <i class="bi bi-arrow-down-circle text-success"></i>
-                            <span>Income</span>
-                        </a>
+                    <a href="/expenses" class="navigation-link">
+                        <i class="bi bi-arrow-up-circle text-danger"></i>
+                        <span>Expenses</span>
+                    </a>
 
-                        <a href="/expenses" class="navigation-link">
-                            <i class="bi bi-arrow-up-circle text-danger"></i>
-                            <span>Expenses</span>
-                        </a>
+                    <a href="/accounts" class="navigation-link">
+                        <i class="bi bi-wallet2 text-info"></i>
+                        <span>Accounts</span>
+                    </a>
 
-                        <a href="/accounts" class="navigation-link">
-                            <i class="bi bi-wallet2 text-info"></i>
-                            <span>Accounts</span>
-                        </a>
+                    <a href="/reports" class="navigation-link">
+                        <i class="bi bi-bar-chart text-warning"></i>
+                        <span>Reports</span>
+                    </a>
 
-                        <a href="/reports" class="navigation-link">
-                            <i class="bi bi-bar-chart text-warning"></i>
-                            <span>Reports</span>
-                        </a>
+                    <a href="/settings" class="navigation-link">
+                        <i class="bi bi-gear text-secondary"></i>
+                        <span>Settings</span>
+                    </a>
 
-                        <a href="/settings" class="navigation-link">
-                            <i class="bi bi-gear text-secondary"></i>
-                            <span>Settings</span>
-                        </a>
-
-                    </nav>
-
-                </div>
+                </nav>
 
             </div>
 
-        <!--</div>-->
+        </div>
     {#{% endif %}#}
 
 
