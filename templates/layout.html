@@ -38,7 +38,7 @@
                 <div class="d-flex align-items-center gap-3">
 
                     <!-- Hamburger -->
-                    {#{% if session.get("user_id") %}#}
+                    {% if session.get("user_id") %}
                         <!-- Header hamburger -->
                         <button
                             class="btn menu-button"
@@ -50,7 +50,7 @@
                         >
                             <i class="bi bi-list fs-4"></i>
                         </button>
-                    {#{% endif %}#}
+                    {% endif %}
 
                     <!-- Logo -->
                     <a href="/" class="brand text-decoration-none" id="{% if session.get('user_id') %}title-li{% else %}title-lo{% endif %}">
