@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>{% block title %}Budget{% endblock %}</title>
+
+    <!-- Bootstrap -->
+    <link
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
+        rel="stylesheet"
+    >
+
+    <!-- Bootstrap Icons -->
+    <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css"
+    >
+
+    <!-- Custom CSS -->
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='style.css') }}"
+    >
+</head>
+
+<body>
+
+    <!-- Top bar -->
+    <header class="top-bar border-bottom bg-white">
+        <div class="container-fluid px-4">
+
+            <div class="d-flex align-items-center justify-content-between"
+                 style="height: 72px;">
+
+                <!-- Left -->
+                <div class="d-flex align-items-center gap-3">
+
+                    <!-- Hamburger -->
+                    {#{% if session.get("user_id") %}#}
+                        <button
+                            class="btn menu-button"
+                            type="button"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#navigation"
+                            aria-expanded="false"
+                            aria-controls="navigation"
+                        >
+                            <i class="bi bi-list fs-4"></i>
+                        </button>
+                    {#{% endif %}#}
+
+                    <!-- Logo -->
+                    <a href="/" class="brand text-decoration-none" id="{% if session.get('user_id') %}title-li{% else %}title-lo{% endif %}">
+                        BudgetBoard
+                    </a>
+
+                </div>
+
+
+                <!-- Right -->
+                <div class="d-flex align-items-center gap-2">
+
+                    {% if session.get("user_id") %}
+
+                        <a href="/settings"
+                           class="btn btn-light rounded-pill px-3">
+                            <i class="bi bi-person me-1"></i>
+                            Account
+                        </a>
+
+                        <a href="/logout"
+                           class="btn btn-outline-secondary rounded-pill px-3">
+                            Log out
+                        </a>
+
+                    {% else %}
+
+                        <a href="/login"
+                           class="btn btn-light rounded-pill px-3">
+                            Log in
+                        </a>
+
+                        <a href="/register"
+                           class="btn btn-primary rounded-pill px-3">
+                            Sign up
+                        </a>
+
+                    {% endif %}
+
+                </div>
+
+            </div>
+
+        </div>
+    </header>
+
+
+    <!-- Sidebar -->
+    {#{% if session.get("user_id") %}#}
+        <!--<div
+            class="offcanvas offcanvas-start navigation-panel"
+            tabindex="-1"
+            id="navigation"
+            aria-labelledby="navigationLabel"
+        >
+
+             Sidebar header
+            <div class="offcanvas-header px-3 pt-4">
+
+                <div class="small text-secondary" id="menu">
+                    MENU
+                </div>
+
+                <button
+                    type="button"
+                    class="btn menu-button"
+                    data-bs-dismiss="offcanvas"
+                    aria-label="Close navigation"
+                >
+                    <i class="bi bi-list fs-4"></i>
+                </button>
+
+            </div>-->
+
+
+            <!-- Navigation links -->
+            <div class="collapse floating-navigation" id="navigation">
+
+                <div class="navigation-card">
+
+                    <nav class="d-flex flex-column gap-1">
+
+                        <a href="/" class="navigation-link">
+                            <i class="bi bi-grid-1x2-fill text-primary"></i>
+                            <span>Dashboard</span>
+                        </a>
+
+                        <a href="/plan" class="navigation-link">
+                            <i class="bi bi-calendar2-check text-purple"></i>
+                            <span>Plan</span>
+                        </a>
+
+                        <a href="/income" class="navigation-link">
+                            <i class="bi bi-arrow-down-circle text-success"></i>
+                            <span>Income</span>
+                        </a>
+
+                        <a href="/expenses" class="navigation-link">
+                            <i class="bi bi-arrow-up-circle text-danger"></i>
+                            <span>Expenses</span>
+                        </a>
+
+                        <a href="/accounts" class="navigation-link">
+                            <i class="bi bi-wallet2 text-info"></i>
+                            <span>Accounts</span>
+                        </a>
+
+                        <a href="/reports" class="navigation-link">
+                            <i class="bi bi-bar-chart text-warning"></i>
+                            <span>Reports</span>
+                        </a>
+
+                        <a href="/settings" class="navigation-link">
+                            <i class="bi bi-gear text-secondary"></i>
+                            <span>Settings</span>
+                        </a>
+
+                    </nav>
+
+                </div>
+
+            </div>
+
+        <!--</div>-->
+    {#{% endif %}#}
+
+
+    <!-- Main content -->
+    <main>
+        {% block main %}
+        {% endblock %}
+    </main>
+
+
+    <!-- Bootstrap JavaScript -->
+    <script
+        src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js">
+    </script>
+
+    {% block scripts %}
+    {% endblock %}
+
+</body>
+</html>
