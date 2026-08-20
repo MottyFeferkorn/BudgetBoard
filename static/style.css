@@ -101,9 +101,31 @@ body {
 .navigation-panel {
     --bs-offcanvas-width: 240px;
 
-    border: none;
+    top: 10px;
+    bottom: auto;
+    left: 0;
 
-    box-shadow: 8px 0 30px rgba(0, 0, 0, 0.08);
+    height: 75vh;
+    max-height: calc(100vh - 20px);
+
+    background: linear-gradient(160deg, #ffffff 0%, #f3f6ff 100%);
+    border: 1px solid rgba(99, 102, 241, 0.12);
+    border-left: 0;
+    border-radius: 0 20px 20px 0;
+
+    box-shadow:
+        0 18px 45px rgba(30, 41, 59, 0.16),
+        0 4px 12px rgba(99, 102, 241, 0.08);
+
+    overflow: hidden;
+}
+
+#menu {
+    margin-left: 12px;
+}
+
+.navigation-panel .offcanvas-header .menu-button {
+    margin-left: auto;
 }
 
 
@@ -200,3 +222,75 @@ main {
     font-size: 2rem;
 }
 
+
+/* =========================
+   Authentication pages
+   ========================= */
+
+.auth-page {
+    min-height: calc(100vh - 80px);
+    display: flex;
+    align-items: center;
+    padding: 48px 20px 80px;
+    background:
+        radial-gradient(circle at top left, rgba(37, 99, 235, 0.08), transparent 32rem),
+        radial-gradient(circle at bottom right, rgba(124, 58, 237, 0.06), transparent 28rem);
+}
+
+.auth-card {
+    overflow: hidden;
+    background-color: rgba(255, 255, 255, 0.98);
+    border: 1px solid rgba(33, 37, 41, 0.07);
+    border-radius: 20px;
+    box-shadow:
+        0 20px 48px rgba(33, 37, 41, 0.08),
+        0 4px 12px rgba(33, 37, 41, 0.04);
+}
+
+.auth-card .form-label {
+    color: #343a40;
+}
+
+.auth-card .form-control {
+    min-height: 52px;
+    padding: 12px 14px;
+    border: 1px solid #dee2e6;
+    border-radius: 12px;
+    font-size: 1rem;
+    transition:
+        border-color 0.15s ease,
+        box-shadow 0.15s ease;
+}
+
+.auth-card .form-control::placeholder {
+    color: #adb5bd;
+}
+
+.auth-card .form-control:focus {
+    border-color: #86b7fe;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.12);
+}
+
+.auth-submit {
+    min-height: 52px;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 600;
+    box-shadow: 0 8px 16px rgba(13, 110, 253, 0.16);
+}
+
+.auth-link {
+    color: #0d6efd;
+    text-decoration: none;
+}
+
+.auth-link:hover {
+    text-decoration: underline;
+}
+
+@media (max-width: 575.98px) {
+    .auth-page {
+        align-items: flex-start;
+        padding: 40px 4px 64px;
+    }
+}
