@@ -99,7 +99,7 @@
 
 
     <!-- Sidebar -->
-    {#{% if session.get("user_id") %}#}
+    {% if session.get("user_id") %}
 
         <!-- Sidebar -->
         <div
@@ -173,7 +173,7 @@
             </div>
 
         </div>
-    {#{% endif %}#}
+    {% endif %}
 
 
     <!-- Main content -->
