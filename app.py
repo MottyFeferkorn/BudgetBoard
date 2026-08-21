@@ -145,3 +145,7 @@ def logout():
 @app.route("/income")
 def income():
     return render_template("income.html")
+
+@app.route("/accounts")
+def accounts():
+    return render_template("accounts.html")
