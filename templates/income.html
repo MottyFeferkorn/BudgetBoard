@@ -372,20 +372,41 @@
                                     <option>Cash</option>
                                 </select>
                             </div>
-                            <div class="col-md-7">
-                                <label class="form-label fw-medium" for="recurring-frequency">Frequency</label>
-                                <select class="form-select" id="recurring-frequency" required>
-                                    <option value="" selected disabled>Select frequency</option>
-                                    <option>Every X days</option>
-                                    <option>Weekly</option>
-                                    <option>Every 2 weeks</option>
-                                    <option>Monthly</option>
-                                    <option>Yearly</option>
-                                </select>
-                            </div>
-                            <div class="col-md-5">
-                                <label class="form-label fw-medium" for="recurring-interval">Number of days</label>
-                                <input class="form-control" id="recurring-interval" type="number" min="1" placeholder="Used for Every X days">
+                            <div class="col-12">
+                                <fieldset>
+                                    <legend class="form-label fw-medium">Frequency</legend>
+                                    <div class="income-frequency-options">
+                                        <input class="btn-check" id="frequency-weekly" name="frequency" type="radio" value="weekly" required>
+                                        <label class="btn btn-outline-secondary" for="frequency-weekly">Weekly</label>
+
+                                        <input class="btn-check" id="frequency-biweekly" name="frequency" type="radio" value="biweekly">
+                                        <label class="btn btn-outline-secondary" for="frequency-biweekly">Every 2 weeks</label>
+
+                                        <input class="btn-check" id="frequency-monthly" name="frequency" type="radio" value="monthly">
+                                        <label class="btn btn-outline-secondary" for="frequency-monthly">Monthly</label>
+
+                                        <input class="btn-check" id="frequency-yearly" name="frequency" type="radio" value="yearly">
+                                        <label class="btn btn-outline-secondary" for="frequency-yearly">Yearly</label>
+
+                                        <input class="btn-check" id="frequency-custom" name="frequency" type="radio" value="custom">
+                                        <label class="btn btn-outline-secondary" for="frequency-custom">Custom</label>
+
+                                        <div class="income-custom-frequency">
+                                            <span class="fw-medium">Every</span>
+                                            <input
+                                                class="form-control text-center"
+                                                id="recurring-interval"
+                                                type="number"
+                                                min="1"
+                                                max="365"
+                                                value="10"
+                                                aria-label="Number of days between payments"
+                                            >
+                                            <span class="fw-medium">days</span>
+                                            <small class="text-secondary">Choose from 1 to 365.</small>
+                                        </div>
+                                    </div>
+                                </fieldset>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label fw-medium" for="recurring-start-date">Start date</label>
