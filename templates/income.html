@@ -1,0 +1,408 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Income
+{% endblock %}
+
+{% block main %}
+    <section class="income-page py-4 py-lg-5">
+        <div class="container-xl">
+            <div class="d-flex flex-column flex-sm-row align-items-sm-center justify-content-between gap-3 mb-4">
+                <div>
+                    <p class="income-eyebrow mb-1">Money in</p>
+                    <h1 class="h2 fw-bold mb-1">Income</h1>
+                    <p class="text-secondary mb-0">Track every payment and see where your money comes from.</p>
+                </div>
+
+                <div class="btn-group income-add-group align-self-start align-self-sm-center">
+                    <button
+                        class="btn btn-primary px-4"
+                        type="button"
+                        data-bs-toggle="modal"
+                        data-bs-target="#addIncomeModal"
+                    >
+                        <span class="me-1" aria-hidden="true">+</span> Add Income
+                    </button>
+                    <button
+                        class="btn btn-primary dropdown-toggle dropdown-toggle-split"
+                        type="button"
+                        data-bs-toggle="dropdown"
+                        aria-expanded="false"
+                    >
+                        <span class="visually-hidden">Open income actions</span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                        <li>
+                            <button
+                                class="dropdown-item"
+                                type="button"
+                                data-bs-toggle="modal"
+                                data-bs-target="#addIncomeModal"
+                            >
+                                Add income
+                            </button>
+                        </li>
+                        <li>
+                            <button
+                                class="dropdown-item"
+                                type="button"
+                                data-bs-toggle="modal"
+                                data-bs-target="#recurringIncomeModal"
+                            >
+                                Set up recurring income
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="card income-summary-card border-0 mb-4">
+                <div class="card-body p-4">
+                    <div class="row align-items-center g-4">
+                        <div class="col-sm-7">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="income-summary-icon" aria-hidden="true">$</div>
+                                <div>
+                                    <p class="text-secondary small mb-1">This month's total income</p>
+                                    <p class="display-6 fw-bold mb-0">$6,845.20</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-sm-5">
+                            <div class="income-summary-detail ps-sm-4">
+                                <p class="text-secondary small mb-1">Income received</p>
+                                <p class="h5 fw-semibold mb-1">10 payments</p>
+                                <p class="small text-success mb-0">↑ 8.4% from last month</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card income-list-card border-0">
+                <div class="card-body p-0">
+                    <div class="p-3 p-lg-4 border-bottom">
+                        <div class="row g-2 align-items-center">
+                            <div class="col-12 col-lg">
+                                <div class="input-group income-search">
+                                    <span class="input-group-text bg-white border-end-0 text-secondary" aria-hidden="true">
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <circle cx="11" cy="11" r="8"></circle>
+                                            <path d="m21 21-4.35-4.35"></path>
+                                        </svg>
+                                    </span>
+                                    <input
+                                        class="form-control border-start-0 ps-0"
+                                        type="search"
+                                        placeholder="Search income"
+                                        aria-label="Search income"
+                                    >
+                                </div>
+                            </div>
+
+                            <div class="col-6 col-sm-auto dropdown">
+                                <button class="btn btn-outline-secondary w-100 dropdown-toggle" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+                                    Date range
+                                </button>
+                                <div class="dropdown-menu dropdown-menu-end income-filter-menu p-3">
+                                    <label class="form-label small fw-semibold" for="filter-start-date">From</label>
+                                    <input class="form-control mb-3" id="filter-start-date" type="date">
+                                    <label class="form-label small fw-semibold" for="filter-end-date">To</label>
+                                    <input class="form-control mb-3" id="filter-end-date" type="date">
+                                    <button class="btn btn-primary btn-sm w-100" type="button">Apply dates</button>
+                                </div>
+                            </div>
+
+                            <div class="col-6 col-sm-auto dropdown">
+                                <button class="btn btn-outline-secondary w-100 dropdown-toggle" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+                                    Category
+                                </button>
+                                <div class="dropdown-menu dropdown-menu-end income-filter-menu p-3">
+                                    <p class="small fw-semibold mb-2">Income category</p>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" id="category-salary" type="checkbox">
+                                        <label class="form-check-label" for="category-salary">Salary</label>
+                                    </div>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" id="category-freelance" type="checkbox">
+                                        <label class="form-check-label" for="category-freelance">Freelance</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" id="category-other" type="checkbox">
+                                        <label class="form-check-label" for="category-other">Other</label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-6 col-sm-auto dropdown">
+                                <button class="btn btn-outline-secondary w-100 dropdown-toggle" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+                                    Account
+                                </button>
+                                <div class="dropdown-menu dropdown-menu-end income-filter-menu p-3">
+                                    <p class="small fw-semibold mb-2">Deposited to</p>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" id="account-checking" type="checkbox">
+                                        <label class="form-check-label" for="account-checking">Main Checking</label>
+                                    </div>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" id="account-savings" type="checkbox">
+                                        <label class="form-check-label" for="account-savings">Savings</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" id="account-cash" type="checkbox">
+                                        <label class="form-check-label" for="account-cash">Cash</label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-6 col-sm-auto dropdown">
+                                <button class="btn btn-outline-secondary w-100 dropdown-toggle" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+                                    Amount
+                                </button>
+                                <div class="dropdown-menu dropdown-menu-end income-filter-menu p-3">
+                                    <div class="row g-2 mb-3">
+                                        <div class="col-6">
+                                            <label class="form-label small fw-semibold" for="minimum-amount">Minimum</label>
+                                            <input class="form-control" id="minimum-amount" type="number" min="0" step="0.01" placeholder="$0">
+                                        </div>
+                                        <div class="col-6">
+                                            <label class="form-label small fw-semibold" for="maximum-amount">Maximum</label>
+                                            <input class="form-control" id="maximum-amount" type="number" min="0" step="0.01" placeholder="Any">
+                                        </div>
+                                    </div>
+                                    <button class="btn btn-primary btn-sm w-100" type="button">Apply amount</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table income-table align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th scope="col">Date</th>
+                                    <th scope="col">Description</th>
+                                    <th scope="col">Category</th>
+                                    <th scope="col">Account</th>
+                                    <th class="text-end" scope="col">Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><span class="text-nowrap">Aug 20, 2026</span></td>
+                                    <td><span class="fw-semibold">Acme Studio paycheck</span></td>
+                                    <td><span class="income-category income-category-salary">Salary</span></td>
+                                    <td>Main Checking</td>
+                                    <td class="text-end fw-semibold text-success">+$3,250.00</td>
+                                </tr>
+                                <tr>
+                                    <td><span class="text-nowrap">Aug 18, 2026</span></td>
+                                    <td><span class="fw-semibold">Website design project</span></td>
+                                    <td><span class="income-category income-category-freelance">Freelance</span></td>
+                                    <td>Main Checking</td>
+                                    <td class="text-end fw-semibold text-success">+$850.00</td>
+                                </tr>
+                                <tr>
+                                    <td><span class="text-nowrap">Aug 15, 2026</span></td>
+                                    <td><span class="fw-semibold">Savings interest</span></td>
+                                    <td><span class="income-category income-category-interest">Interest</span></td>
+                                    <td>Savings</td>
+                                    <td class="text-end fw-semibold text-success">+$42.18</td>
+                                </tr>
+                                <tr>
+                                    <td><span class="text-nowrap">Aug 13, 2026</span></td>
+                                    <td><span class="fw-semibold">Marketplace sale</span></td>
+                                    <td><span class="income-category income-category-other">Other</span></td>
+                                    <td>Cash</td>
+                                    <td class="text-end fw-semibold text-success">+$125.00</td>
+                                </tr>
+                                <tr>
+                                    <td><span class="text-nowrap">Aug 11, 2026</span></td>
+                                    <td><span class="fw-semibold">Photography session</span></td>
+                                    <td><span class="income-category income-category-freelance">Freelance</span></td>
+                                    <td>Main Checking</td>
+                                    <td class="text-end fw-semibold text-success">+$475.00</td>
+                                </tr>
+                                <tr>
+                                    <td><span class="text-nowrap">Aug 7, 2026</span></td>
+                                    <td><span class="fw-semibold">Expense reimbursement</span></td>
+                                    <td><span class="income-category income-category-other">Other</span></td>
+                                    <td>Main Checking</td>
+                                    <td class="text-end fw-semibold text-success">+$168.02</td>
+                                </tr>
+                                <tr>
+                                    <td><span class="text-nowrap">Aug 6, 2026</span></td>
+                                    <td><span class="fw-semibold">Dividend payment</span></td>
+                                    <td><span class="income-category income-category-interest">Investment</span></td>
+                                    <td>Savings</td>
+                                    <td class="text-end fw-semibold text-success">+$96.00</td>
+                                </tr>
+                                <tr>
+                                    <td><span class="text-nowrap">Aug 5, 2026</span></td>
+                                    <td><span class="fw-semibold">Consulting retainer</span></td>
+                                    <td><span class="income-category income-category-freelance">Freelance</span></td>
+                                    <td>Main Checking</td>
+                                    <td class="text-end fw-semibold text-success">+$625.00</td>
+                                </tr>
+                                <tr>
+                                    <td><span class="text-nowrap">Aug 3, 2026</span></td>
+                                    <td><span class="fw-semibold">Course royalty</span></td>
+                                    <td><span class="income-category income-category-other">Royalties</span></td>
+                                    <td>Savings</td>
+                                    <td class="text-end fw-semibold text-success">+$289.00</td>
+                                </tr>
+                                <tr>
+                                    <td><span class="text-nowrap">Aug 1, 2026</span></td>
+                                    <td><span class="fw-semibold">Acme Studio paycheck</span></td>
+                                    <td><span class="income-category income-category-salary">Salary</span></td>
+                                    <td>Main Checking</td>
+                                    <td class="text-end fw-semibold text-success">+$925.00</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="text-center p-4 border-top">
+                        <button class="btn btn-outline-primary px-4" type="button">Load more</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div class="modal fade" id="addIncomeModal" tabindex="-1" aria-labelledby="addIncomeModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content income-modal-content">
+                <div class="modal-header border-0 px-4 pt-4 pb-2">
+                    <div>
+                        <h2 class="modal-title h4 fw-bold" id="addIncomeModalLabel">Add income</h2>
+                        <p class="text-secondary small mb-0">Record money you have received.</p>
+                    </div>
+                    <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form>
+                    <div class="modal-body px-4 py-3">
+                        <div class="mb-3">
+                            <label class="form-label fw-medium" for="income-amount">Amount</label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input class="form-control" id="income-amount" type="number" min="0" step="0.01" placeholder="0.00" required>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-medium" for="income-category">Category</label>
+                            <input class="form-control" id="income-category" type="text" list="income-category-options" placeholder="Choose or enter a category" autocomplete="off" required>
+                            <datalist id="income-category-options">
+                                <option value="Salary"></option>
+                                <option value="Freelance"></option>
+                                <option value="Interest"></option>
+                                <option value="Investment"></option>
+                            </datalist>
+                            <div class="form-text">Previous categories will appear here as suggestions.</div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-medium" for="income-description">Description</label>
+                            <input class="form-control" id="income-description" type="text" list="income-description-options" placeholder="For example, August paycheck" autocomplete="off" required>
+                            <datalist id="income-description-options">
+                                <option value="Acme Studio paycheck"></option>
+                                <option value="Website design project"></option>
+                                <option value="Savings interest"></option>
+                            </datalist>
+                            <div class="form-text">Previous descriptions can be suggested as you type.</div>
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-sm-6">
+                                <label class="form-label fw-medium" for="income-account">Account</label>
+                                <select class="form-select" id="income-account" required>
+                                    <option value="" selected disabled>Select account</option>
+                                    <option>Main Checking</option>
+                                    <option>Savings</option>
+                                    <option>Cash</option>
+                                </select>
+                            </div>
+                            <div class="col-sm-6">
+                                <label class="form-label fw-medium" for="income-date">Date</label>
+                                <input class="form-control" id="income-date" type="date" value="2026-08-21" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer border-0 px-4 pt-2 pb-4">
+                        <button class="btn btn-light px-4" type="button" data-bs-dismiss="modal">Cancel</button>
+                        <button class="btn btn-primary px-4" type="submit">Add income</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="recurringIncomeModal" tabindex="-1" aria-labelledby="recurringIncomeModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content income-modal-content">
+                <div class="modal-header border-0 px-4 pt-4 pb-2">
+                    <div>
+                        <h2 class="modal-title h4 fw-bold" id="recurringIncomeModalLabel">Set up recurring income</h2>
+                        <p class="text-secondary small mb-0">Create a schedule for income you receive regularly.</p>
+                    </div>
+                    <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form>
+                    <div class="modal-body px-4 py-3">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-medium" for="recurring-amount">Amount</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">$</span>
+                                    <input class="form-control" id="recurring-amount" type="number" min="0" step="0.01" placeholder="0.00" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-medium" for="recurring-category">Category</label>
+                                <input class="form-control" id="recurring-category" type="text" list="income-category-options" placeholder="Choose or enter a category" autocomplete="off" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-medium" for="recurring-description">Description</label>
+                                <input class="form-control" id="recurring-description" type="text" list="income-description-options" placeholder="For example, paycheck" autocomplete="off" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-medium" for="recurring-account">Account</label>
+                                <select class="form-select" id="recurring-account" required>
+                                    <option value="" selected disabled>Select account</option>
+                                    <option>Main Checking</option>
+                                    <option>Savings</option>
+                                    <option>Cash</option>
+                                </select>
+                            </div>
+                            <div class="col-md-7">
+                                <label class="form-label fw-medium" for="recurring-frequency">Frequency</label>
+                                <select class="form-select" id="recurring-frequency" required>
+                                    <option value="" selected disabled>Select frequency</option>
+                                    <option>Every X days</option>
+                                    <option>Weekly</option>
+                                    <option>Every 2 weeks</option>
+                                    <option>Monthly</option>
+                                    <option>Yearly</option>
+                                </select>
+                            </div>
+                            <div class="col-md-5">
+                                <label class="form-label fw-medium" for="recurring-interval">Number of days</label>
+                                <input class="form-control" id="recurring-interval" type="number" min="1" placeholder="Used for Every X days">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-medium" for="recurring-start-date">Start date</label>
+                                <input class="form-control" id="recurring-start-date" type="date" value="2026-08-21" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-medium" for="recurring-end-date">End date <span class="text-secondary fw-normal">(optional)</span></label>
+                                <input class="form-control" id="recurring-end-date" type="date">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer border-0 px-4 pt-2 pb-4">
+                        <button class="btn btn-light px-4" type="button" data-bs-dismiss="modal">Cancel</button>
+                        <button class="btn btn-primary px-4" type="submit">Set up income</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+{% endblock %}

@@ -400,3 +400,208 @@ main {
         padding: 40px 4px 64px;
     }
 }
+
+/* Income page */
+.income-page {
+    min-height: calc(100vh - 72px);
+    background-color: #f8f9fa;
+}
+
+.income-eyebrow {
+    color: #0d6efd;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.income-add-group .btn {
+    min-height: 2.75rem;
+    font-weight: 600;
+}
+
+.income-add-group .btn:first-child {
+    border-radius: 0.75rem 0 0 0.75rem;
+}
+
+.income-add-group .btn:last-of-type {
+    border-radius: 0 0.75rem 0.75rem 0;
+}
+
+.income-summary-card,
+.income-list-card {
+    border-radius: 1rem;
+    background-color: #fff;
+    box-shadow: 0 0.5rem 1.75rem rgba(33, 37, 41, 0.06);
+}
+
+.income-summary-card {
+    background:
+        radial-gradient(circle at 92% 15%, rgba(13, 110, 253, 0.1), transparent 18rem),
+        #fff;
+}
+
+.income-summary-icon {
+    display: grid;
+    flex: 0 0 auto;
+    width: 3.25rem;
+    height: 3.25rem;
+    place-items: center;
+    border-radius: 1rem;
+    background-color: rgba(25, 135, 84, 0.12);
+    color: #198754;
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.income-summary-detail {
+    border-left: 1px solid #e9ecef;
+}
+
+.income-list-card {
+    overflow: visible;
+}
+
+.income-list-card > .card-body {
+    border-radius: inherit;
+}
+
+.income-search .input-group-text,
+.income-search .form-control,
+.income-list-card .btn-outline-secondary {
+    min-height: 2.75rem;
+}
+
+.income-search .input-group-text {
+    border-radius: 0.75rem 0 0 0.75rem;
+}
+
+.income-search .form-control {
+    border-radius: 0 0.75rem 0.75rem 0;
+}
+
+.income-list-card .btn-outline-secondary {
+    border-color: #dee2e6;
+    border-radius: 0.75rem;
+    color: #495057;
+}
+
+.income-list-card .btn-outline-secondary:hover,
+.income-list-card .btn-outline-secondary:focus {
+    border-color: #adb5bd;
+    background-color: #f8f9fa;
+    color: #212529;
+}
+
+.income-filter-menu {
+    width: 18rem;
+    border: 1px solid rgba(33, 37, 41, 0.08);
+    border-radius: 0.85rem;
+}
+
+.income-table thead th {
+    padding: 0.9rem 1.25rem;
+    border-bottom-color: #e9ecef;
+    background-color: #fbfcfd;
+    color: #6c757d;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.income-table tbody td {
+    padding: 1rem 1.25rem;
+    border-bottom-color: #f0f1f2;
+    color: #495057;
+}
+
+.income-table tbody tr:last-child td {
+    border-bottom: 0;
+}
+
+.income-table tbody tr:hover {
+    background-color: rgba(13, 110, 253, 0.025);
+}
+
+.income-category {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.3rem 0.65rem;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.income-category-salary {
+    background-color: rgba(13, 110, 253, 0.1);
+    color: #0a58ca;
+}
+
+.income-category-freelance {
+    background-color: rgba(111, 66, 193, 0.1);
+    color: #6f42c1;
+}
+
+.income-category-interest {
+    background-color: rgba(25, 135, 84, 0.1);
+    color: #146c43;
+}
+
+.income-category-other {
+    background-color: rgba(255, 193, 7, 0.18);
+    color: #856404;
+}
+
+.income-modal-content {
+    border: 0;
+    border-radius: 1.1rem;
+    box-shadow: 0 1.5rem 4rem rgba(33, 37, 41, 0.16);
+}
+
+.income-modal-content .form-control,
+.income-modal-content .form-select,
+.income-modal-content .input-group-text {
+    min-height: 2.85rem;
+    border-color: #dee2e6;
+}
+
+.income-modal-content .form-control,
+.income-modal-content .form-select {
+    border-radius: 0.7rem;
+}
+
+.income-modal-content .input-group-text {
+    border-radius: 0.7rem 0 0 0.7rem;
+    background-color: #f8f9fa;
+}
+
+.income-modal-content .input-group .form-control {
+    border-radius: 0 0.7rem 0.7rem 0;
+}
+
+.income-modal-content .modal-footer .btn {
+    min-height: 2.65rem;
+    border-radius: 0.7rem;
+    font-weight: 600;
+}
+
+@media (max-width: 575.98px) {
+    .income-page {
+        padding-right: 0.25rem;
+        padding-left: 0.25rem;
+    }
+
+    .income-summary-detail {
+        padding-top: 1rem;
+        padding-left: 0 !important;
+        border-top: 1px solid #e9ecef;
+        border-left: 0;
+    }
+
+    .income-filter-menu {
+        width: min(18rem, calc(100vw - 2rem));
+    }
+}
