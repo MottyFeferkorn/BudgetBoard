@@ -85,10 +85,12 @@ def login():
             rows[0]["hash"], request.form.get("password")
         ):
             ...
+        # for now
+        else:
 
-        # Remember which user has logged in
-        session["user_id"] = rows[0]["id"]
-        session["username"] = rows[0]["username"]
+            # Remember which user has logged in
+            session["user_id"] = rows[0]["id"]
+            session["username"] = rows[0]["username"]
 
         # Redirect user to home page
         return redirect("/")
