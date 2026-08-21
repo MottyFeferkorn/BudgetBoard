@@ -1,9 +1,14 @@
+import re
+
 from cs50 import SQL
 from flask import Flask, flash, redirect, render_template, request, session, make_response
 from flask_session import Session
 from werkzeug.security import check_password_hash, generate_password_hash
 
 import helpers
+
+# Require a conventional public email shape with a dotted domain.
+EMAIL_PATTERN = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]{2,}$")
 
 # Configure application
 app = Flask(__name__)
@@ -26,6 +31,7 @@ def index():
 @app.route("/register", methods=["GET", "POST"])
 def register():
     # Display an empty registration form when the page is first opened.
+    # Send empty errors dict to be able to refer to it unconditionally
     if request.method == "GET":
         return render_template("register.html", errors={})
 
@@ -40,6 +46,8 @@ def register():
     # Validate the email address stored in the username column.
     if not username:
         errors["username"] = "Please enter your email address."
+    elif not EMAIL_PATTERN.fullmatch(username):
+        errors["username"] = "Please enter a valid email address."
 
     # Require a password with a minimum length of eight characters.
     if not password:
@@ -101,7 +109,7 @@ def login():
     # Use one generic message so the response does not reveal registered accounts.
     login_error = "Invalid email or password."
 
-    # Both fields are required before querying the database.
+    # Both credentials are required before querying the database.
     if not username or not password:
         return render_template(
             "login.html",

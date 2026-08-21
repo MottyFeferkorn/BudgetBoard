@@ -28,6 +28,7 @@
                                         id="email"
                                         name="username"
                                         type="email"
+                                        pattern="^[^\s@]+@[^\s@]+\.[^\s@]{2,}$"
                                         placeholder="you@example.com"
                                         autocomplete="email"
                                         value="{{ username | default('') }}"
