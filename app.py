@@ -18,35 +18,42 @@ db = SQL("sqlite:///Budget.db")
 
 @app.route("/")
 def index():
-    # if user is logged in
+    # Show the dashboard to signed-in users and the landing page to visitors.
     if session:
         return render_template("index.html")
     return render_template("home.html")
 
 @app.route("/register", methods=["GET", "POST"])
 def register():
+    # Display an empty registration form when the page is first opened.
     if request.method == "GET":
         return render_template("register.html", errors={})
 
+    # Read the submitted values. Empty strings make the validation below simpler.
     username = (request.form.get("username") or "").strip()
     password = request.form.get("password") or ""
     confirmation = request.form.get("confirmation") or ""
 
+    # Store field-specific messages so Jinja can show each error beside its input.
     errors = {}
 
+    # Validate the email address stored in the username column.
     if not username:
         errors["username"] = "Please enter your email address."
 
+    # Require a password with a minimum length of eight characters.
     if not password:
         errors["password"] = "Please enter a password."
     elif len(password) < 8:
         errors["password"] = "Password must contain at least 8 characters."
 
+    # Make sure the user confirms the exact same password.
     if not confirmation:
         errors["confirmation"] = "Please confirm your password."
     elif password != confirmation:
         errors["confirmation"] = "The passwords do not match."
 
+    # Redisplay the form if any validation failed. Never send passwords back.
     if errors:
         return render_template(
             "register.html",
@@ -54,11 +61,13 @@ def register():
             username=username
         ), 400
 
+    # Hash the password before storing it; plaintext passwords never enter the database.
     hashed_password = generate_password_hash(
         password,
         method="pbkdf2:sha256"
     )
 
+    # Insert the account. The database's UNIQUE constraint rejects duplicate usernames.
     try:
         db.execute(
             "INSERT INTO users (username, hash) VALUES (?, ?)",
@@ -66,6 +75,7 @@ def register():
             hashed_password
         )
     except ValueError:
+        # CS50 SQL raises ValueError when the UNIQUE username constraint is violated.
         errors["username"] = "An account with this email already exists."
 
         return render_template(
@@ -74,18 +84,24 @@ def register():
             username=username
         ), 409
 
+    # Confirm registration after redirecting to the login page.
     flash("Your account was created. You can now log in.", "success")
     return redirect("/login")
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
+    # Display the login form when the page is first opened.
     if request.method == "GET":
         return render_template("login.html")
 
+    # Read and clean the submitted credentials.
     username = (request.form.get("username") or "").strip()
     password = request.form.get("password") or ""
+
+    # Use one generic message so the response does not reveal registered accounts.
     login_error = "Invalid email or password."
 
+    # Both fields are required before querying the database.
     if not username or not password:
         return render_template(
             "login.html",
@@ -93,11 +109,13 @@ def login():
             username=username
         ), 400
 
+    # Look up the account by its case-insensitive, indexed username.
     rows = db.execute(
         "SELECT * FROM users WHERE username = ?",
         username
     )
 
+    # Reject an unknown username or a password that does not match the stored hash.
     if len(rows) != 1 or not check_password_hash(rows[0]["hash"], password):
         return render_template(
             "login.html",
@@ -105,13 +123,16 @@ def login():
             username=username
         ), 401
 
+    # Start a clean authenticated session and keep the username for the profile menu.
     session.clear()
     session["user_id"] = rows[0]["id"]
     session["username"] = rows[0]["username"]
 
+    # Send the authenticated user to the dashboard.
     return redirect("/")
 
 @app.route("/logout")
 def logout():
+    # Remove all authentication data and return to the public landing page.
     session.clear()
     return redirect("/")

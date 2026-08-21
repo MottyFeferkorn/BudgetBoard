@@ -18,7 +18,7 @@
 
                     <div class="card auth-card">
                         <div class="card-body p-4 p-md-5">
-                            <form action="/register" method="post">
+                            <form id="register-form" action="/register" method="post" novalidate>
                                 <div class="mb-3">
                                     <label for="email" class="form-label fw-medium">
                                         Email address
@@ -31,14 +31,13 @@
                                         placeholder="you@example.com"
                                         autocomplete="email"
                                         value="{{ username | default('') }}"
+                                        aria-describedby="email-feedback"
                                         required
                                         autofocus
                                     >
-                                    {% if errors.get("username") %}
-                                        <div class="invalid-feedback">
-                                            {{ errors["username"] }}
-                                        </div>
-                                    {% endif %}
+                                    <div class="invalid-feedback" id="email-feedback">
+                                        {{ errors.get("username", "") }}
+                                    </div>
                                 </div>
 
                                 <div class="mb-3">
@@ -52,13 +51,12 @@
                                         type="password"
                                         placeholder="Create a password"
                                         autocomplete="new-password"
+                                        aria-describedby="password-feedback"
                                         required
                                     >
-                                    {% if errors.get("password") %}
-                                        <div class="invalid-feedback">
-                                            {{ errors["password"] }}
-                                        </div>
-                                    {% endif %}
+                                    <div class="invalid-feedback" id="password-feedback">
+                                        {{ errors.get("password", "") }}
+                                    </div>
                                 </div>
 
                                 <div class="mb-4">
@@ -72,13 +70,12 @@
                                         type="password"
                                         placeholder="Repeat your password"
                                         autocomplete="new-password"
+                                        aria-describedby="confirmation-feedback"
                                         required
                                     >
-                                    {% if errors.get("confirmation") %}
-                                        <div class="invalid-feedback">
-                                            {{ errors["confirmation"] }}
-                                        </div>
-                                    {% endif %}
+                                    <div class="invalid-feedback" id="confirmation-feedback">
+                                        {{ errors.get("confirmation", "") }}
+                                    </div>
                                 </div>
 
                                 <button class="btn btn-primary btn-lg w-100 auth-submit" type="submit">
@@ -96,4 +93,8 @@
             </div>
         </div>
     </section>
+{% endblock %}
+
+{% block scripts %}
+    <script src="{{ url_for('static', filename='register.js') }}"></script>
 {% endblock %}
