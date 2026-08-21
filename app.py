@@ -141,3 +141,7 @@ def logout():
     # Remove all authentication data and return to the public landing page.
     session.clear()
     return redirect("/")
+
+@app.route("/income")
+def income():
+    return render_template("income.html")
