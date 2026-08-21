@@ -168,32 +168,32 @@
                     </div>
                     <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <form>
+                <form action="/accounts" method="post">
                     <div class="modal-body px-4 py-3">
                         <div class="mb-3">
                             <label class="form-label fw-medium" for="account-name">Account name</label>
-                            <input class="form-control" id="account-name" type="text" placeholder="For example, Main Checking">
+                            <input class="form-control" id="account-name" name="account_name" type="text" placeholder="For example, Main Checking">
                         </div>
                         <div class="mb-3">
                             <label class="form-label fw-medium" for="account-type">Account type</label>
-                            <select class="form-select" id="account-type">
+                            <select class="form-select" id="account-type" name="account_type">
                                 <option value="" selected disabled>Select account type</option>
                                 <option value="checking">Checking</option>
                                 <option value="savings">Savings</option>
                                 <option value="cash">Cash</option>
-                                <option value="credit-card">Credit Card</option>
+                                <option value="credit card">Credit Card</option>
                                 <option value="investment">Investment</option>
                                 <option value="other">Other</option>
                             </select>
                         </div>
                         <div>
                             <label class="form-label fw-medium" for="account-bank">Bank</label>
-                            <input class="form-control" id="account-bank" type="text" placeholder="For example, Chase">
+                            <input class="form-control" id="account-bank" name="bank" type="text" placeholder="For example, Chase">
                         </div>
                     </div>
                     <div class="modal-footer border-0 px-4 pt-2 pb-4">
                         <button class="btn btn-light px-4" type="button" data-bs-dismiss="modal">Cancel</button>
-                        <button class="btn btn-primary px-4" type="button">Create account</button>
+                        <button class="btn btn-primary px-4" type="submit">Create account</button>
                     </div>
                 </form>
             </div>

@@ -146,6 +146,36 @@ def logout():
 def income():
     return render_template("income.html")
 
-@app.route("/accounts")
+@app.route("/accounts", methods=["GET", "POST"])
 def accounts():
-    return render_template("accounts.html")
+    # Display the Accounts page when it is opened normally.
+    if request.method == "GET":
+        return render_template("accounts.html")
+
+    # Read and clean the submitted account details.
+    name = (request.form.get("account_name") or "").strip()
+    account_type = (request.form.get("account_type") or "").strip()
+    bank = (request.form.get("bank") or "").strip() or None
+
+    # Require the two mandatory fields. Bank is optional.
+    if not name :
+        flash("Account name is required.", "danger")
+        return redirect("/accounts")
+
+    # Store the account under the currently signed-in user.
+    try:
+        db.execute(
+            "INSERT INTO accounts (user_id, name, type, bank) VALUES (?, ?, ?, ?)",
+            session["user_id"],
+            name,
+            account_type,
+            bank
+        )
+    except ValueError:
+        # Handle a database type-constraint failure without showing a server error.
+        flash("Please select a valid account type.", "danger")
+        return redirect("/accounts")
+
+    # Confirm the insert after redirecting back to the Accounts page.
+    flash("Account added successfully.", "success")
+    return redirect("/accounts")
