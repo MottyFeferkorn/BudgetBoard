@@ -7,9 +7,6 @@ from werkzeug.security import check_password_hash, generate_password_hash
 
 import helpers
 
-# Require a conventional public email shape with a dotted domain.
-EMAIL_PATTERN = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]{2,}$")
-
 # Configure application
 app = Flask(__name__)
 
@@ -46,7 +43,7 @@ def register():
     # Validate the email address stored in the username column.
     if not username:
         errors["username"] = "Please enter your email address."
-    elif not EMAIL_PATTERN.fullmatch(username):
+    elif not re.fullmatch(r"^[^\s@]+@[^\s@]+\.[^\s@]{2,}$", username):
         errors["username"] = "Please enter a valid email address."
 
     # Require a password with a minimum length of eight characters.
