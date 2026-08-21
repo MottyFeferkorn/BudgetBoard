@@ -25,79 +25,91 @@ def index():
 
 @app.route("/register", methods=["GET", "POST"])
 def register():
-    # if user visits by post handle registration
-    if request.method == "POST":
-        username = request.form.get("username")
-        password = request.form.get("password")
-        confirm_password = request.form.get("confirmation")
+    if request.method == "GET":
+        return render_template("register.html", errors={})
 
-        # validates that user filled out all 3 fields
-        if username and password and confirm_password:
+    username = (request.form.get("username") or "").strip()
+    password = request.form.get("password") or ""
+    confirmation = request.form.get("confirmation") or ""
 
-            # validate that password and confirmation matches
-            if password == confirm_password:
+    errors = {}
 
-                # hash password
-                hashed_password = generate_password_hash(password, method="pbkdf2:sha256")
+    if not username:
+        errors["username"] = "Please enter your email address."
 
-                # try adding user if value error username exists
-                try:
-                    # update data base
-                    db.execute("INSERT INTO users (username, hash) VALUES (?, ?)",
-                               username, hashed_password)
+    if not password:
+        errors["password"] = "Please enter a password."
+    elif len(password) < 8:
+        errors["password"] = "Password must contain at least 8 characters."
 
-                except ValueError:
-                    return ...
-                else:
-                    return redirect("/login")
-            else:
-                return ...
-        else:
-            return ...
-    # if user visits by get show the registration page
-    else:
-        return render_template("register.html")
+    if not confirmation:
+        errors["confirmation"] = "Please confirm your password."
+    elif password != confirmation:
+        errors["confirmation"] = "The passwords do not match."
+
+    if errors:
+        return render_template(
+            "register.html",
+            errors=errors,
+            username=username
+        ), 400
+
+    hashed_password = generate_password_hash(
+        password,
+        method="pbkdf2:sha256"
+    )
+
+    try:
+        db.execute(
+            "INSERT INTO users (username, hash) VALUES (?, ?)",
+            username,
+            hashed_password
+        )
+    except ValueError:
+        errors["username"] = "An account with this email already exists."
+
+        return render_template(
+            "register.html",
+            errors=errors,
+            username=username
+        ), 409
+
+    flash("Your account was created. You can now log in.", "success")
+    return redirect("/login")
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
-    """Log user in"""
-
-    # Forget any user_id
-    session.clear()
-
-    # User reached route via POST (as by submitting a form via POST)
-    if request.method == "POST":
-        # Ensure username was submitted
-        if not request.form.get("username"):
-          ...
-
-        # Ensure password was submitted
-        elif not request.form.get("password"):
-            ...
-
-        # Query database for username
-        rows = db.execute(
-            "SELECT * FROM users WHERE username = ?", request.form.get("username")
-        )
-
-        # Ensure username exists and password is correct
-        if len(rows) != 1 or not check_password_hash(
-            rows[0]["hash"], request.form.get("password")
-        ):
-            ...
-        # for now
-        else:
-
-            # Remember which user has logged in
-            session["user_id"] = rows[0]["id"]
-            session["username"] = rows[0]["username"]
-
-        # Redirect user to home page
-        return redirect("/")
-
-    # User reached route via GET (as by clicking a link or via redirect)
-    else:
+    if request.method == "GET":
         return render_template("login.html")
+
+    username = (request.form.get("username") or "").strip()
+    password = request.form.get("password") or ""
+    login_error = "Invalid email or password."
+
+    if not username or not password:
+        return render_template(
+            "login.html",
+            login_error=login_error,
+            username=username
+        ), 400
+
+    rows = db.execute(
+        "SELECT * FROM users WHERE username = ?",
+        username
+    )
+
+    if len(rows) != 1 or not check_password_hash(rows[0]["hash"], password):
+        return render_template(
+            "login.html",
+            login_error=login_error,
+            username=username
+        ), 401
+
+    session.clear()
+    session["user_id"] = rows[0]["id"]
+    session["username"] = rows[0]["username"]
+
+    return redirect("/")
 
 @app.route("/logout")
 def logout():

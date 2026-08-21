@@ -24,15 +24,21 @@
                                         Email address
                                     </label>
                                     <input
-                                        class="form-control form-control-lg"
+                                        class="form-control form-control-lg{% if errors.get('username') %} is-invalid{% endif %}"
                                         id="email"
                                         name="username"
                                         type="email"
                                         placeholder="you@example.com"
                                         autocomplete="email"
+                                        value="{{ username | default('') }}"
                                         required
                                         autofocus
                                     >
+                                    {% if errors.get("username") %}
+                                        <div class="invalid-feedback">
+                                            {{ errors["username"] }}
+                                        </div>
+                                    {% endif %}
                                 </div>
 
                                 <div class="mb-3">
@@ -40,7 +46,7 @@
                                         Password
                                     </label>
                                     <input
-                                        class="form-control form-control-lg"
+                                        class="form-control form-control-lg{% if errors.get('password') %} is-invalid{% endif %}"
                                         id="password"
                                         name="password"
                                         type="password"
@@ -48,6 +54,11 @@
                                         autocomplete="new-password"
                                         required
                                     >
+                                    {% if errors.get("password") %}
+                                        <div class="invalid-feedback">
+                                            {{ errors["password"] }}
+                                        </div>
+                                    {% endif %}
                                 </div>
 
                                 <div class="mb-4">
@@ -55,7 +66,7 @@
                                         Confirm password
                                     </label>
                                     <input
-                                        class="form-control form-control-lg"
+                                        class="form-control form-control-lg{% if errors.get('confirmation') %} is-invalid{% endif %}"
                                         id="confirmation"
                                         name="confirmation"
                                         type="password"
@@ -63,6 +74,11 @@
                                         autocomplete="new-password"
                                         required
                                     >
+                                    {% if errors.get("confirmation") %}
+                                        <div class="invalid-feedback">
+                                            {{ errors["confirmation"] }}
+                                        </div>
+                                    {% endif %}
                                 </div>
 
                                 <button class="btn btn-primary btn-lg w-100 auth-submit" type="submit">

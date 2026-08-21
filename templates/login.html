@@ -18,6 +18,12 @@
 
                     <div class="card auth-card">
                         <div class="card-body p-4 p-md-5">
+                            {% if login_error %}
+                                <div class="alert alert-danger" role="alert">
+                                    {{ login_error }}
+                                </div>
+                            {% endif %}
+
                             <form action="/login" method="post">
                                 <div class="mb-3">
                                     <label for="email" class="form-label fw-medium">
@@ -30,6 +36,7 @@
                                         type="email"
                                         placeholder="you@example.com"
                                         autocomplete="email"
+                                        value="{{ username | default('') }}"
                                         required
                                         autofocus
                                     >
