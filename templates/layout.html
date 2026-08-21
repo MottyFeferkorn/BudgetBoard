@@ -61,20 +61,51 @@
 
 
                 <!-- Right -->
-                <div class="d-flex align-items-center gap-2">
+                <div class="d-flex align-items-center ms-auto">
 
                     {% if session.get("user_id") %}
 
-                        <a href="/settings"
-                           class="btn btn-light rounded-pill px-3">
-                            <i class="bi bi-person me-1"></i>
-                            Account
-                        </a>
+                        <div class="dropdown">
+                            <button
+                                class="btn profile-button dropdown-toggle"
+                                type="button"
+                                data-bs-toggle="dropdown"
+                                aria-expanded="false"
+                                aria-label="Open account menu"
+                            >
+                                {{ session.get("username", "U")[0] | upper }}
+                            </button>
 
-                        <a href="/logout"
-                           class="btn btn-outline-secondary rounded-pill px-3">
-                            Log out
-                        </a>
+                            <div class="dropdown-menu dropdown-menu-end profile-menu">
+                                <div class="profile-menu-header">
+                                    <div class="profile-menu-avatar">
+                                        {{ session.get("username", "U")[0] | upper }}
+                                    </div>
+                                    <div class="profile-menu-username text-truncate">
+                                        {{ session.get("username", "User") }}
+                                    </div>
+                                </div>
+
+                                <div class="dropdown-divider"></div>
+
+                                <a class="dropdown-item profile-menu-item" href="/account">
+                                    <i class="bi bi-person"></i>
+                                    <span>My account</span>
+                                </a>
+
+                                <a class="dropdown-item profile-menu-item" href="/settings">
+                                    <i class="bi bi-gear"></i>
+                                    <span>Settings</span>
+                                </a>
+
+                                <div class="dropdown-divider"></div>
+
+                                <a class="dropdown-item profile-menu-item profile-menu-logout" href="/logout">
+                                    <i class="bi bi-box-arrow-right"></i>
+                                    <span>Log out</span>
+                                </a>
+                            </div>
+                        </div>
 
                     {% else %}
 
