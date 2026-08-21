@@ -1,0 +1,371 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Accounts
+{% endblock %}
+
+{% block styles %}
+    <style>
+        .accounts-page {
+            min-height: calc(100vh - 72px);
+            background-color: #f8f9fa;
+        }
+
+        .accounts-eyebrow {
+            color: #0d6efd;
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .accounts-add-button {
+            min-height: 2.75rem;
+            border-radius: 0.75rem;
+            font-weight: 600;
+            box-shadow: 0 0.5rem 1rem rgba(13, 110, 253, 0.16);
+        }
+
+        .accounts-summary-card,
+        .account-card {
+            border-radius: 1rem;
+            background-color: #fff;
+            box-shadow: 0 0.5rem 1.75rem rgba(33, 37, 41, 0.06);
+        }
+
+        .accounts-summary-card {
+            background: radial-gradient(circle at 92% 15%, rgba(13, 110, 253, 0.1), transparent 18rem), #fff;
+        }
+
+        .accounts-summary-icon,
+        .account-icon {
+            display: grid;
+            flex: 0 0 auto;
+            place-items: center;
+            border-radius: 1rem;
+        }
+
+        .accounts-summary-icon {
+            width: 3.25rem;
+            height: 3.25rem;
+            background-color: rgba(13, 110, 253, 0.11);
+            color: #0d6efd;
+            font-size: 1.4rem;
+        }
+
+        .accounts-summary-detail {
+            border-left: 1px solid #e9ecef;
+        }
+
+        .account-card {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .account-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 0.85rem 2rem rgba(33, 37, 41, 0.09);
+        }
+
+        .account-icon {
+            width: 3rem;
+            height: 3rem;
+            font-size: 1.25rem;
+        }
+
+        .account-icon-checking,
+        .account-type-checking {
+            background-color: rgba(13, 110, 253, 0.1);
+            color: #0a58ca;
+        }
+
+        .account-icon-savings,
+        .account-type-savings {
+            background-color: rgba(25, 135, 84, 0.1);
+            color: #146c43;
+        }
+
+        .account-icon-cash,
+        .account-type-cash {
+            background-color: rgba(111, 66, 193, 0.1);
+            color: #6f42c1;
+        }
+
+        .account-type {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.6rem;
+            border-radius: 999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .account-menu-button {
+            display: grid;
+            width: 2.5rem;
+            height: 2.5rem;
+            padding: 0;
+            place-items: center;
+            border: 0;
+            border-radius: 0.7rem;
+            color: #6c757d;
+        }
+
+        .account-menu-button:hover,
+        .account-menu-button:focus,
+        .account-menu-button.show {
+            background-color: #f1f3f5;
+            color: #212529;
+        }
+
+        .account-menu {
+            min-width: 11rem;
+            padding: 0.5rem;
+            border: 1px solid rgba(33, 37, 41, 0.08);
+            border-radius: 0.85rem;
+        }
+
+        .account-menu .dropdown-item {
+            padding: 0.55rem 0.7rem;
+            border-radius: 0.55rem;
+            font-size: 0.9rem;
+        }
+
+        .account-balance .h3 {
+            letter-spacing: -0.025em;
+        }
+
+        .account-modal-content {
+            border: 0;
+            border-radius: 1.1rem;
+            box-shadow: 0 1.5rem 4rem rgba(33, 37, 41, 0.16);
+        }
+
+        .account-modal-content .form-control,
+        .account-modal-content .form-select {
+            min-height: 2.85rem;
+            border-color: #dee2e6;
+            border-radius: 0.7rem;
+        }
+
+        .account-modal-content .modal-footer .btn {
+            min-height: 2.65rem;
+            border-radius: 0.7rem;
+            font-weight: 600;
+        }
+
+        .min-w-0 {
+            min-width: 0;
+        }
+
+        @media (max-width: 575.98px) {
+            .accounts-page {
+                padding-right: 0.25rem;
+                padding-left: 0.25rem;
+            }
+
+            .accounts-summary-detail {
+                padding-top: 1rem;
+                padding-left: 0 !important;
+                border-top: 1px solid #e9ecef;
+                border-left: 0;
+            }
+        }
+    </style>
+{% endblock %}
+
+{% block main %}
+    <section class="accounts-page py-4 py-lg-5">
+        <div class="container-xl">
+            <div class="d-flex flex-column flex-sm-row align-items-sm-center justify-content-between gap-3 mb-4">
+                <div>
+                    <p class="accounts-eyebrow mb-1">Your money</p>
+                    <h1 class="h2 fw-bold mb-1">Accounts</h1>
+                    <p class="text-secondary mb-0">Manage where your money is stored.</p>
+                </div>
+
+                <button
+                    class="btn btn-primary accounts-add-button align-self-start align-self-sm-center px-4"
+                    type="button"
+                    data-bs-toggle="modal"
+                    data-bs-target="#addAccountModal"
+                >
+                    <span class="me-1" aria-hidden="true">+</span> Add Account
+                </button>
+            </div>
+
+            <div class="card accounts-summary-card border-0 mb-4">
+                <div class="card-body p-4">
+                    <div class="row align-items-center g-4">
+                        <div class="col-sm-7">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="accounts-summary-icon" aria-hidden="true">
+                                    <i class="bi bi-wallet2"></i>
+                                </div>
+                                <div>
+                                    <p class="text-secondary small mb-1">Total balance</p>
+                                    <p class="display-6 fw-bold mb-0">$18,250.00</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-sm-5">
+                            <div class="accounts-summary-detail ps-sm-4">
+                                <p class="text-secondary small mb-1">Number of accounts</p>
+                                <p class="h5 fw-semibold mb-0">3 accounts</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row g-4">
+                <div class="col-12 col-md-6 col-xl-4">
+                    <article class="card account-card border-0 h-100">
+                        <div class="card-body p-4">
+                            <div class="d-flex align-items-start justify-content-between gap-3 mb-4">
+                                <div class="d-flex align-items-center gap-3 min-w-0">
+                                    <div class="account-icon account-icon-checking" aria-hidden="true">
+                                        <i class="bi bi-bank"></i>
+                                    </div>
+                                    <div class="min-w-0">
+                                        <h2 class="h5 fw-bold text-truncate mb-1">Main Checking</h2>
+                                        <span class="account-type account-type-checking">Checking</span>
+                                    </div>
+                                </div>
+                                <div class="dropdown">
+                                    <button class="btn account-menu-button" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Open Main Checking account menu">
+                                        <i class="bi bi-three-dots"></i>
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end account-menu shadow-sm">
+                                        <li><button class="dropdown-item" type="button"><i class="bi bi-pencil me-2"></i>Edit account</button></li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><button class="dropdown-item text-danger" type="button"><i class="bi bi-trash3 me-2"></i>Delete account</button></li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <p class="text-secondary small mb-1">Bank</p>
+                            <p class="fw-medium mb-4">Chase</p>
+                            <div class="account-balance pt-3 border-top">
+                                <p class="text-secondary small mb-1">Current balance</p>
+                                <p class="h3 fw-bold mb-0">$4,250.00</p>
+                            </div>
+                        </div>
+                    </article>
+                </div>
+
+                <div class="col-12 col-md-6 col-xl-4">
+                    <article class="card account-card border-0 h-100">
+                        <div class="card-body p-4">
+                            <div class="d-flex align-items-start justify-content-between gap-3 mb-4">
+                                <div class="d-flex align-items-center gap-3 min-w-0">
+                                    <div class="account-icon account-icon-savings" aria-hidden="true">
+                                        <i class="bi bi-piggy-bank"></i>
+                                    </div>
+                                    <div class="min-w-0">
+                                        <h2 class="h5 fw-bold text-truncate mb-1">Savings</h2>
+                                        <span class="account-type account-type-savings">Savings</span>
+                                    </div>
+                                </div>
+                                <div class="dropdown">
+                                    <button class="btn account-menu-button" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Open Savings account menu">
+                                        <i class="bi bi-three-dots"></i>
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end account-menu shadow-sm">
+                                        <li><button class="dropdown-item" type="button"><i class="bi bi-pencil me-2"></i>Edit account</button></li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><button class="dropdown-item text-danger" type="button"><i class="bi bi-trash3 me-2"></i>Delete account</button></li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <p class="text-secondary small mb-1">Bank</p>
+                            <p class="fw-medium mb-4">Capital One</p>
+                            <div class="account-balance pt-3 border-top">
+                                <p class="text-secondary small mb-1">Current balance</p>
+                                <p class="h3 fw-bold mb-0">$12,500.00</p>
+                            </div>
+                        </div>
+                    </article>
+                </div>
+
+                <div class="col-12 col-md-6 col-xl-4">
+                    <article class="card account-card border-0 h-100">
+                        <div class="card-body p-4">
+                            <div class="d-flex align-items-start justify-content-between gap-3 mb-4">
+                                <div class="d-flex align-items-center gap-3 min-w-0">
+                                    <div class="account-icon account-icon-cash" aria-hidden="true">
+                                        <i class="bi bi-cash-stack"></i>
+                                    </div>
+                                    <div class="min-w-0">
+                                        <h2 class="h5 fw-bold text-truncate mb-1">Cash Wallet</h2>
+                                        <span class="account-type account-type-cash">Cash</span>
+                                    </div>
+                                </div>
+                                <div class="dropdown">
+                                    <button class="btn account-menu-button" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Open Cash Wallet account menu">
+                                        <i class="bi bi-three-dots"></i>
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end account-menu shadow-sm">
+                                        <li><button class="dropdown-item" type="button"><i class="bi bi-pencil me-2"></i>Edit account</button></li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><button class="dropdown-item text-danger" type="button"><i class="bi bi-trash3 me-2"></i>Delete account</button></li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <p class="text-secondary small mb-1">Bank</p>
+                            <p class="fw-medium mb-4">None</p>
+                            <div class="account-balance pt-3 border-top">
+                                <p class="text-secondary small mb-1">Current balance</p>
+                                <p class="h3 fw-bold mb-0">$1,500.00</p>
+                            </div>
+                        </div>
+                    </article>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div class="modal fade" id="addAccountModal" tabindex="-1" aria-labelledby="addAccountModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content account-modal-content">
+                <div class="modal-header border-0 px-4 pt-4 pb-2">
+                    <div>
+                        <h2 class="modal-title h4 fw-bold" id="addAccountModalLabel">Add account</h2>
+                        <p class="text-secondary small mb-0">Add a place where you keep your money.</p>
+                    </div>
+                    <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form>
+                    <div class="modal-body px-4 py-3">
+                        <div class="mb-3">
+                            <label class="form-label fw-medium" for="account-name">Account name</label>
+                            <input class="form-control" id="account-name" type="text" placeholder="For example, Main Checking">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-medium" for="account-type">Account type</label>
+                            <select class="form-select" id="account-type">
+                                <option value="" selected disabled>Select account type</option>
+                                <option value="checking">Checking</option>
+                                <option value="savings">Savings</option>
+                                <option value="cash">Cash</option>
+                                <option value="credit-card">Credit Card</option>
+                                <option value="investment">Investment</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="form-label fw-medium" for="account-bank">Bank</label>
+                            <input class="form-control" id="account-bank" type="text" placeholder="For example, Chase">
+                        </div>
+                    </div>
+                    <div class="modal-footer border-0 px-4 pt-2 pb-4">
+                        <button class="btn btn-light px-4" type="button" data-bs-dismiss="modal">Cancel</button>
+                        <button class="btn btn-primary px-4" type="button">Create account</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+{% endblock %}
