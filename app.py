@@ -157,8 +157,8 @@ def accounts():
     account_type = (request.form.get("account_type") or "").strip()
     bank = (request.form.get("bank") or "").strip() or None
 
-    # Require the two mandatory fields. Bank is optional.
-    if not name :
+    # Require the name field as the type will be inforced later and the bank is optional
+    if not name:
         flash("Account name is required.", "danger")
         return redirect("/accounts")
 
