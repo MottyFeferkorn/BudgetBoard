@@ -153,6 +153,10 @@ def logout():
     session.clear()
     return redirect("/")
 
+@app.route("/plan")
+def plan():
+    return render_template("plan.html")
+
 @app.route("/income", defaults={"limit": "10"}, methods=["GET", "POST"])
 @app.route("/income/<limit>", methods=["GET", "POST"])
 @login_required
