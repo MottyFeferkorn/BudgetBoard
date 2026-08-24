@@ -6,12 +6,20 @@ from urllib.parse import urlencode
 from cs50 import SQL
 from flask import Flask, flash, redirect, render_template, request, session, make_response, url_for
 from flask_session import Session
+from werkzeug.middleware.proxy_fix import ProxyFix
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from helpers import login_required, usd
 
 # Configure application
 app = Flask(__name__)
+
+# Trust the public hostname and HTTPS scheme supplied by one Dev Tunnel proxy.
+app.wsgi_app = ProxyFix(
+    app.wsgi_app,
+    x_proto=1,
+    x_host=1
+)
 
 # Custom filter
 app.jinja_env.filters["usd"] = usd
@@ -150,8 +158,8 @@ def logout():
 
 @app.route("/income", defaults={"limit": "10"}, methods=["GET", "POST"])
 @app.route("/income/<limit>", methods=["GET", "POST"])
+@login_required
 def income(limit):
-    # Authentication will be handled by a reusable decorator later.
     user_id = session["user_id"]
 
     # Support the three preview sizes followed by an unpaginated final view.
@@ -293,7 +301,8 @@ def income(limit):
                 url_for(
                     "income",
                     limit="all" if show_all else page_limit,
-                    added=1
+                    added=1,
+                    _external=True
                 )
             )
     else:
