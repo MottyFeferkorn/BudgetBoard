@@ -504,6 +504,11 @@ main {
     table-layout: fixed;
 }
 
+.income-table th,
+.income-table td {
+    text-align: center;
+}
+
 .income-table .income-col-standard {
     width: 19%;
 }
