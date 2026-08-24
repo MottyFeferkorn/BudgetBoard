@@ -1,0 +1,418 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Plan
+{% endblock %}
+
+{% block styles %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='plan.css') }}">
+{% endblock %}
+
+{% block main %}
+    <section class="plan-page py-4 py-lg-5">
+        <div class="container-xl">
+            <div class="d-flex flex-column flex-sm-row align-items-sm-center justify-content-between gap-3 mb-4">
+                <div>
+                    <p class="plan-eyebrow mb-1">Monthly budget</p>
+                    <h1 class="h2 fw-bold mb-1">Plan</h1>
+                    <p class="text-secondary mb-0">Plan your income and spending for each month.</p>
+                </div>
+
+                <button
+                    class="btn btn-primary plan-primary-button align-self-start align-self-sm-center px-4"
+                    type="button"
+                    data-bs-toggle="modal"
+                    data-bs-target="#newPlanModal"
+                >
+                    <i class="bi bi-plus-lg me-1" aria-hidden="true"></i>
+                    New Plan
+                </button>
+            </div>
+
+            <div class="card plan-month-card border-0 mb-4">
+                <div class="card-body p-3 p-md-4">
+                    <div class="plan-month-navigation" aria-label="Plan month navigation">
+                        <button class="btn plan-month-arrow" type="button" aria-label="View August plan">
+                            <i class="bi bi-chevron-left" aria-hidden="true"></i>
+                        </button>
+
+                        <div class="plan-months">
+                            <button class="btn plan-month-option" type="button">August</button>
+                            <button class="btn plan-month-option active" type="button" aria-current="date">September</button>
+                            <button class="btn plan-month-option" type="button">October</button>
+                        </div>
+
+                        <button class="btn plan-month-arrow" type="button" aria-label="View October plan">
+                            <i class="bi bi-chevron-right" aria-hidden="true"></i>
+                        </button>
+
+                        <div class="dropdown plan-saved-months">
+                            <button
+                                class="btn btn-outline-secondary dropdown-toggle"
+                                type="button"
+                                data-bs-toggle="dropdown"
+                                aria-expanded="false"
+                            >
+                                Saved months
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                                <li><button class="dropdown-item" type="button">July</button></li>
+                                <li><button class="dropdown-item" type="button">August</button></li>
+                                <li><button class="dropdown-item active" type="button" aria-current="true">September</button></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row g-3 mb-4">
+                <div class="col-12 col-md-4">
+                    <div class="card plan-summary-card plan-summary-income border-0 h-100">
+                        <div class="card-body d-flex align-items-center gap-3 p-3 p-lg-4">
+                            <div class="plan-summary-icon" aria-hidden="true">
+                                <i class="bi bi-arrow-down"></i>
+                            </div>
+                            <div>
+                                <p class="small text-secondary mb-1">Planned Income</p>
+                                <p class="h4 fw-bold mb-0">$6,500</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-12 col-md-4">
+                    <div class="card plan-summary-card plan-summary-expenses border-0 h-100">
+                        <div class="card-body d-flex align-items-center gap-3 p-3 p-lg-4">
+                            <div class="plan-summary-icon" aria-hidden="true">
+                                <i class="bi bi-arrow-up"></i>
+                            </div>
+                            <div>
+                                <p class="small text-secondary mb-1">Planned Expenses</p>
+                                <p class="h4 fw-bold mb-0">$4,800</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-12 col-md-4">
+                    <div class="card plan-summary-card plan-summary-remaining border-0 h-100">
+                        <div class="card-body d-flex align-items-center gap-3 p-3 p-lg-4">
+                            <div class="plan-summary-icon" aria-hidden="true">
+                                <i class="bi bi-wallet2"></i>
+                            </div>
+                            <div>
+                                <p class="small text-secondary mb-1">Planned Remaining</p>
+                                <p class="h4 fw-bold mb-0">$1,700</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <ul class="nav nav-pills plan-tabs mb-3" id="planTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button
+                        class="nav-link active"
+                        id="income-plan-tab"
+                        data-bs-toggle="tab"
+                        data-bs-target="#income-plan-pane"
+                        type="button"
+                        role="tab"
+                        aria-controls="income-plan-pane"
+                        aria-selected="true"
+                    >
+                        Income
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button
+                        class="nav-link"
+                        id="expenses-plan-tab"
+                        data-bs-toggle="tab"
+                        data-bs-target="#expenses-plan-pane"
+                        type="button"
+                        role="tab"
+                        aria-controls="expenses-plan-pane"
+                        aria-selected="false"
+                    >
+                        Expenses
+                    </button>
+                </li>
+            </ul>
+
+            <div class="tab-content" id="planTabContent">
+                <div
+                    class="tab-pane fade show active"
+                    id="income-plan-pane"
+                    role="tabpanel"
+                    aria-labelledby="income-plan-tab"
+                    tabindex="0"
+                >
+                    <div class="card plan-category-card border-0">
+                        <div class="card-body p-0">
+                            <div class="plan-category-header p-3 p-md-4">
+                                <h2 class="h5 fw-bold mb-1">Income Plan</h2>
+                                <p class="text-secondary small mb-0">Plan how much you expect to receive.</p>
+                            </div>
+
+                            <div class="plan-category-row">
+                                <label class="plan-category-name" for="plan-income-salary">Salary</label>
+                                <div class="plan-category-actions">
+                                    <div class="input-group plan-amount-input">
+                                        <span class="input-group-text">$</span>
+                                        <input class="form-control" id="plan-income-salary" type="number" min="0" step="0.01" value="5000.00" aria-label="Planned amount for Salary">
+                                    </div>
+                                    <div class="dropdown">
+                                        <button class="btn plan-category-menu" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Open Salary category menu">
+                                            <i class="bi bi-three-dots" aria-hidden="true"></i>
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu-end plan-category-dropdown shadow-sm">
+                                            <li><button class="dropdown-item" type="button"><i class="bi bi-pencil me-2"></i>Rename category</button></li>
+                                            <li><button class="dropdown-item text-danger" type="button"><i class="bi bi-dash-circle me-2"></i>Remove from this plan</button></li>
+                                            <li><p class="dropdown-helper mb-0">This category will still be available elsewhere.</p></li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="plan-category-row">
+                                <label class="plan-category-name" for="plan-income-freelance">Freelance</label>
+                                <div class="plan-category-actions">
+                                    <div class="input-group plan-amount-input">
+                                        <span class="input-group-text">$</span>
+                                        <input class="form-control" id="plan-income-freelance" type="number" min="0" step="0.01" value="1000.00" aria-label="Planned amount for Freelance">
+                                    </div>
+                                    <div class="dropdown">
+                                        <button class="btn plan-category-menu" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Open Freelance category menu"><i class="bi bi-three-dots" aria-hidden="true"></i></button>
+                                        <ul class="dropdown-menu dropdown-menu-end plan-category-dropdown shadow-sm">
+                                            <li><button class="dropdown-item" type="button"><i class="bi bi-pencil me-2"></i>Rename category</button></li>
+                                            <li><button class="dropdown-item text-danger" type="button"><i class="bi bi-dash-circle me-2"></i>Remove from this plan</button></li>
+                                            <li><p class="dropdown-helper mb-0">This category will still be available elsewhere.</p></li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="plan-category-row">
+                                <label class="plan-category-name" for="plan-income-interest">Interest</label>
+                                <div class="plan-category-actions">
+                                    <div class="input-group plan-amount-input">
+                                        <span class="input-group-text">$</span>
+                                        <input class="form-control" id="plan-income-interest" type="number" min="0" step="0.01" value="200.00" aria-label="Planned amount for Interest">
+                                    </div>
+                                    <div class="dropdown">
+                                        <button class="btn plan-category-menu" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Open Interest category menu"><i class="bi bi-three-dots" aria-hidden="true"></i></button>
+                                        <ul class="dropdown-menu dropdown-menu-end plan-category-dropdown shadow-sm">
+                                            <li><button class="dropdown-item" type="button"><i class="bi bi-pencil me-2"></i>Rename category</button></li>
+                                            <li><button class="dropdown-item text-danger" type="button"><i class="bi bi-dash-circle me-2"></i>Remove from this plan</button></li>
+                                            <li><p class="dropdown-helper mb-0">This category will still be available elsewhere.</p></li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="plan-category-row">
+                                <label class="plan-category-name" for="plan-income-other">Other</label>
+                                <div class="plan-category-actions">
+                                    <div class="input-group plan-amount-input">
+                                        <span class="input-group-text">$</span>
+                                        <input class="form-control" id="plan-income-other" type="number" min="0" step="0.01" value="300.00" aria-label="Planned amount for Other income">
+                                    </div>
+                                    <div class="dropdown">
+                                        <button class="btn plan-category-menu" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Open Other income category menu"><i class="bi bi-three-dots" aria-hidden="true"></i></button>
+                                        <ul class="dropdown-menu dropdown-menu-end plan-category-dropdown shadow-sm">
+                                            <li><button class="dropdown-item" type="button"><i class="bi bi-pencil me-2"></i>Rename category</button></li>
+                                            <li><button class="dropdown-item text-danger" type="button"><i class="bi bi-dash-circle me-2"></i>Remove from this plan</button></li>
+                                            <li><p class="dropdown-helper mb-0">This category will still be available elsewhere.</p></li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="plan-category-footer d-flex flex-column flex-sm-row align-items-sm-center justify-content-between gap-3 p-3 p-md-4">
+                                <button class="btn btn-link plan-add-category p-0 text-decoration-none" type="button" data-bs-toggle="modal" data-bs-target="#addCategoryModal">
+                                    <i class="bi bi-plus-circle me-1" aria-hidden="true"></i>
+                                    Add Category
+                                </button>
+                                <p class="mb-0 text-sm-end">
+                                    <span class="text-secondary me-2">Total Planned Income:</span>
+                                    <strong class="plan-total">$6,500.00</strong>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div
+                    class="tab-pane fade"
+                    id="expenses-plan-pane"
+                    role="tabpanel"
+                    aria-labelledby="expenses-plan-tab"
+                    tabindex="0"
+                >
+                    <div class="card plan-category-card border-0">
+                        <div class="card-body p-0">
+                            <div class="plan-category-header p-3 p-md-4">
+                                <h2 class="h5 fw-bold mb-1">Expenses Plan</h2>
+                                <p class="text-secondary small mb-0">Plan how much you expect to spend.</p>
+                            </div>
+
+                            <div class="plan-category-row">
+                                <label class="plan-category-name" for="plan-expense-rent">Rent</label>
+                                <div class="plan-category-actions">
+                                    <div class="input-group plan-amount-input"><span class="input-group-text">$</span><input class="form-control" id="plan-expense-rent" type="number" min="0" step="0.01" value="2000.00" aria-label="Planned amount for Rent"></div>
+                                    <div class="dropdown"><button class="btn plan-category-menu" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Open Rent category menu"><i class="bi bi-three-dots"></i></button><ul class="dropdown-menu dropdown-menu-end plan-category-dropdown shadow-sm"><li><button class="dropdown-item" type="button"><i class="bi bi-pencil me-2"></i>Rename category</button></li><li><button class="dropdown-item text-danger" type="button"><i class="bi bi-dash-circle me-2"></i>Remove from this plan</button></li><li><p class="dropdown-helper mb-0">This category will still be available elsewhere.</p></li></ul></div>
+                                </div>
+                            </div>
+
+                            <div class="plan-category-row">
+                                <label class="plan-category-name" for="plan-expense-groceries">Groceries</label>
+                                <div class="plan-category-actions">
+                                    <div class="input-group plan-amount-input"><span class="input-group-text">$</span><input class="form-control" id="plan-expense-groceries" type="number" min="0" step="0.01" value="700.00" aria-label="Planned amount for Groceries"></div>
+                                    <div class="dropdown"><button class="btn plan-category-menu" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Open Groceries category menu"><i class="bi bi-three-dots"></i></button><ul class="dropdown-menu dropdown-menu-end plan-category-dropdown shadow-sm"><li><button class="dropdown-item" type="button"><i class="bi bi-pencil me-2"></i>Rename category</button></li><li><button class="dropdown-item text-danger" type="button"><i class="bi bi-dash-circle me-2"></i>Remove from this plan</button></li><li><p class="dropdown-helper mb-0">This category will still be available elsewhere.</p></li></ul></div>
+                                </div>
+                            </div>
+
+                            <div class="plan-category-row">
+                                <label class="plan-category-name" for="plan-expense-transportation">Transportation</label>
+                                <div class="plan-category-actions">
+                                    <div class="input-group plan-amount-input"><span class="input-group-text">$</span><input class="form-control" id="plan-expense-transportation" type="number" min="0" step="0.01" value="400.00" aria-label="Planned amount for Transportation"></div>
+                                    <div class="dropdown"><button class="btn plan-category-menu" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Open Transportation category menu"><i class="bi bi-three-dots"></i></button><ul class="dropdown-menu dropdown-menu-end plan-category-dropdown shadow-sm"><li><button class="dropdown-item" type="button"><i class="bi bi-pencil me-2"></i>Rename category</button></li><li><button class="dropdown-item text-danger" type="button"><i class="bi bi-dash-circle me-2"></i>Remove from this plan</button></li><li><p class="dropdown-helper mb-0">This category will still be available elsewhere.</p></li></ul></div>
+                                </div>
+                            </div>
+
+                            <div class="plan-category-row">
+                                <label class="plan-category-name" for="plan-expense-utilities">Utilities</label>
+                                <div class="plan-category-actions">
+                                    <div class="input-group plan-amount-input"><span class="input-group-text">$</span><input class="form-control" id="plan-expense-utilities" type="number" min="0" step="0.01" value="300.00" aria-label="Planned amount for Utilities"></div>
+                                    <div class="dropdown"><button class="btn plan-category-menu" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Open Utilities category menu"><i class="bi bi-three-dots"></i></button><ul class="dropdown-menu dropdown-menu-end plan-category-dropdown shadow-sm"><li><button class="dropdown-item" type="button"><i class="bi bi-pencil me-2"></i>Rename category</button></li><li><button class="dropdown-item text-danger" type="button"><i class="bi bi-dash-circle me-2"></i>Remove from this plan</button></li><li><p class="dropdown-helper mb-0">This category will still be available elsewhere.</p></li></ul></div>
+                                </div>
+                            </div>
+
+                            <div class="plan-category-row">
+                                <label class="plan-category-name" for="plan-expense-entertainment">Entertainment</label>
+                                <div class="plan-category-actions">
+                                    <div class="input-group plan-amount-input"><span class="input-group-text">$</span><input class="form-control" id="plan-expense-entertainment" type="number" min="0" step="0.01" value="250.00" aria-label="Planned amount for Entertainment"></div>
+                                    <div class="dropdown"><button class="btn plan-category-menu" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Open Entertainment category menu"><i class="bi bi-three-dots"></i></button><ul class="dropdown-menu dropdown-menu-end plan-category-dropdown shadow-sm"><li><button class="dropdown-item" type="button"><i class="bi bi-pencil me-2"></i>Rename category</button></li><li><button class="dropdown-item text-danger" type="button"><i class="bi bi-dash-circle me-2"></i>Remove from this plan</button></li><li><p class="dropdown-helper mb-0">This category will still be available elsewhere.</p></li></ul></div>
+                                </div>
+                            </div>
+
+                            <div class="plan-category-row">
+                                <label class="plan-category-name" for="plan-expense-other">Other</label>
+                                <div class="plan-category-actions">
+                                    <div class="input-group plan-amount-input"><span class="input-group-text">$</span><input class="form-control" id="plan-expense-other" type="number" min="0" step="0.01" value="1150.00" aria-label="Planned amount for Other expenses"></div>
+                                    <div class="dropdown"><button class="btn plan-category-menu" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Open Other expense category menu"><i class="bi bi-three-dots"></i></button><ul class="dropdown-menu dropdown-menu-end plan-category-dropdown shadow-sm"><li><button class="dropdown-item" type="button"><i class="bi bi-pencil me-2"></i>Rename category</button></li><li><button class="dropdown-item text-danger" type="button"><i class="bi bi-dash-circle me-2"></i>Remove from this plan</button></li><li><p class="dropdown-helper mb-0">This category will still be available elsewhere.</p></li></ul></div>
+                                </div>
+                            </div>
+
+                            <div class="plan-category-footer d-flex flex-column flex-sm-row align-items-sm-center justify-content-between gap-3 p-3 p-md-4">
+                                <button class="btn btn-link plan-add-category p-0 text-decoration-none" type="button" data-bs-toggle="modal" data-bs-target="#addCategoryModal">
+                                    <i class="bi bi-plus-circle me-1" aria-hidden="true"></i>
+                                    Add Category
+                                </button>
+                                <p class="mb-0 text-sm-end">
+                                    <span class="text-secondary me-2">Total Planned Expenses:</span>
+                                    <strong class="plan-total">$4,800.00</strong>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div class="modal fade" id="addCategoryModal" tabindex="-1" aria-labelledby="addCategoryModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content plan-modal-content">
+                <div class="modal-header border-0 px-4 pt-4 pb-2">
+                    <div>
+                        <h2 class="modal-title h5 fw-bold" id="addCategoryModalLabel">Add Category</h2>
+                        <p class="small text-secondary mb-0 mt-1">Add a category to your September plan.</p>
+                    </div>
+                    <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body px-4 py-3">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold" for="new-plan-category">Category</label>
+                        <input class="form-control" id="new-plan-category" type="text" list="category-suggestions" placeholder="Enter or choose a category" autocomplete="off">
+                        <datalist id="category-suggestions">
+                            <option value="Bonus"></option>
+                            <option value="Dividends"></option>
+                            <option value="Dining Out"></option>
+                            <option value="Insurance"></option>
+                        </datalist>
+                        <div class="form-text">Start typing to choose an existing category or add a new one.</div>
+                    </div>
+
+                    <div>
+                        <label class="form-label fw-semibold" for="new-plan-amount">Planned amount</label>
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input class="form-control" id="new-plan-amount" type="number" min="0" step="0.01" placeholder="0.00">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 px-4 pt-2 pb-4">
+                    <button class="btn btn-light px-4" type="button" data-bs-dismiss="modal">Cancel</button>
+                    <button class="btn btn-primary px-4" type="button">Add Category</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="newPlanModal" tabindex="-1" aria-labelledby="newPlanModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content plan-modal-content">
+                <div class="modal-header border-0 px-4 pt-4 pb-2">
+                    <div>
+                        <h2 class="modal-title h5 fw-bold" id="newPlanModalLabel">Create a New Plan</h2>
+                        <p class="small text-secondary mb-0 mt-1">Choose a month and a starting point.</p>
+                    </div>
+                    <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body px-4 py-3">
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold" for="new-plan-month">Month</label>
+                        <select class="form-select" id="new-plan-month">
+                            <option>January</option>
+                            <option>February</option>
+                            <option>March</option>
+                            <option>April</option>
+                            <option>May</option>
+                            <option>June</option>
+                            <option>July</option>
+                            <option>August</option>
+                            <option selected>September</option>
+                            <option>October</option>
+                            <option>November</option>
+                            <option>December</option>
+                        </select>
+                    </div>
+
+                    <fieldset>
+                        <legend class="form-label fw-semibold mb-2">How would you like to start?</legend>
+                        <div class="plan-radio-option mb-2">
+                            <input class="form-check-input" id="start-plan-blank" name="plan-start" type="radio">
+                            <label class="form-check-label" for="start-plan-blank">
+                                <span class="fw-semibold d-block">Start blank</span>
+                                <span class="small text-secondary">Create a plan with no preset amounts.</span>
+                            </label>
+                        </div>
+                        <div class="plan-radio-option">
+                            <input class="form-check-input" id="start-plan-copy" name="plan-start" type="radio" checked>
+                            <label class="form-check-label" for="start-plan-copy">
+                                <span class="fw-semibold d-block">Copy previous month's plan</span>
+                                <span class="small text-secondary">Use your latest categories and planned amounts.</span>
+                            </label>
+                        </div>
+                    </fieldset>
+                </div>
+                <div class="modal-footer border-0 px-4 pt-2 pb-4">
+                    <button class="btn btn-light px-4" type="button" data-bs-dismiss="modal">Cancel</button>
+                    <button class="btn btn-primary px-4" type="button">Create Plan</button>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

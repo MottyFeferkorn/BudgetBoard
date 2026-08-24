@@ -1,0 +1,367 @@
+
+/* Plan page */
+.plan-page {
+    min-height: calc(100vh - 72px);
+    background-color: #f8f9fa;
+}
+
+.plan-eyebrow {
+    color: #0d6efd;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.plan-primary-button {
+    min-height: 2.75rem;
+    border-radius: 0.75rem;
+    font-weight: 600;
+    box-shadow: 0 0.5rem 1rem rgba(13, 110, 253, 0.16);
+}
+
+.plan-month-card,
+.plan-summary-card,
+.plan-category-card {
+    border-radius: 1rem;
+    background-color: #fff;
+    box-shadow: 0 0.5rem 1.75rem rgba(33, 37, 41, 0.06);
+}
+
+.plan-month-navigation {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto auto;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.plan-months {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(5.5rem, 1fr));
+    gap: 0.5rem;
+    max-width: 35rem;
+    margin: 0 auto;
+}
+
+.plan-month-arrow {
+    display: grid;
+    width: 2.5rem;
+    height: 2.5rem;
+    padding: 0;
+    place-items: center;
+    border-radius: 0.7rem;
+    color: #6c757d;
+}
+
+.plan-month-arrow:hover,
+.plan-month-arrow:focus {
+    background-color: #f1f3f5;
+    color: #212529;
+}
+
+.plan-month-option {
+    min-height: 2.5rem;
+    border-radius: 0.7rem;
+    color: #6c757d;
+    font-weight: 600;
+}
+
+.plan-month-option:hover,
+.plan-month-option:focus {
+    background-color: #f8f9fa;
+    color: #212529;
+}
+
+.plan-month-option.active {
+    background-color: rgba(13, 110, 253, 0.1);
+    color: #0d6efd;
+}
+
+.plan-saved-months .btn {
+    min-height: 2.5rem;
+    border-color: #dee2e6;
+    border-radius: 0.7rem;
+    color: #495057;
+}
+
+.plan-summary-card {
+    overflow: hidden;
+}
+
+.plan-summary-card .plan-summary-icon {
+    display: grid;
+    width: 2.8rem;
+    height: 2.8rem;
+    flex: 0 0 auto;
+    place-items: center;
+    border-radius: 0.85rem;
+    font-size: 1.15rem;
+}
+
+.plan-summary-income .plan-summary-icon {
+    background-color: rgba(25, 135, 84, 0.12);
+    color: #198754;
+}
+
+.plan-summary-expenses .plan-summary-icon {
+    background-color: rgba(220, 53, 69, 0.11);
+    color: #dc3545;
+}
+
+.plan-summary-remaining .plan-summary-icon {
+    background-color: rgba(13, 110, 253, 0.1);
+    color: #0d6efd;
+}
+
+.plan-tabs {
+    display: inline-flex;
+    width: min(100%, 24rem);
+    padding: 0.3rem;
+    border: 1px solid #e9ecef;
+    border-radius: 0.85rem;
+    background-color: #fff;
+    box-shadow: 0 0.25rem 1rem rgba(33, 37, 41, 0.04);
+}
+
+.plan-tabs .nav-item {
+    flex: 1 1 0;
+}
+
+.plan-tabs .nav-link {
+    width: 100%;
+    border-radius: 0.6rem;
+    color: #6c757d;
+    font-weight: 600;
+}
+
+.plan-tabs .nav-link.active {
+    background-color: #0d6efd;
+    box-shadow: 0 0.3rem 0.7rem rgba(13, 110, 253, 0.18);
+    color: #fff;
+}
+
+.plan-category-card {
+    overflow: visible;
+}
+
+.plan-category-card > .card-body {
+    border-radius: inherit;
+}
+
+.plan-category-header,
+.plan-category-row {
+    border-bottom: 1px solid #edf0f2;
+}
+
+.plan-category-row {
+    display: flex;
+    min-height: 4.75rem;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+    padding: 0.85rem 1.5rem;
+    transition: background-color 0.15s ease;
+}
+
+.plan-category-row:hover {
+    background-color: #fbfcfd;
+}
+
+.plan-category-name {
+    margin: 0;
+    color: #343a40;
+    font-weight: 600;
+}
+
+.plan-category-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+}
+
+.plan-amount-input {
+    width: 12rem;
+}
+
+.plan-amount-input .input-group-text,
+.plan-amount-input .form-control {
+    min-height: 2.65rem;
+    border-color: #dee2e6;
+}
+
+.plan-amount-input .input-group-text {
+    border-radius: 0.7rem 0 0 0.7rem;
+    background-color: #f8f9fa;
+    color: #6c757d;
+}
+
+.plan-amount-input .form-control {
+    border-radius: 0 0.7rem 0.7rem 0;
+    font-weight: 600;
+    text-align: right;
+}
+
+.plan-amount-input .form-control:focus {
+    position: relative;
+    z-index: 3;
+}
+
+.plan-category-menu {
+    display: grid;
+    width: 2.65rem;
+    height: 2.65rem;
+    padding: 0;
+    place-items: center;
+    border-radius: 0.7rem;
+    color: #6c757d;
+}
+
+.plan-category-menu:hover,
+.plan-category-menu:focus,
+.plan-category-menu.show {
+    background-color: #f1f3f5;
+    color: #212529;
+}
+
+.plan-category-dropdown {
+    width: 17rem;
+    padding: 0.5rem;
+    border: 1px solid rgba(33, 37, 41, 0.08);
+    border-radius: 0.85rem;
+}
+
+.plan-category-dropdown .dropdown-item {
+    padding: 0.55rem 0.7rem;
+    border-radius: 0.55rem;
+    font-size: 0.9rem;
+}
+
+.plan-category-dropdown .dropdown-helper {
+    padding: 0.45rem 0.7rem 0.2rem;
+    color: #6c757d;
+    font-size: 0.75rem;
+    line-height: 1.35;
+}
+
+.plan-category-footer {
+    background-color: #fbfcfd;
+    border-radius: 0 0 1rem 1rem;
+}
+
+.plan-add-category,
+.plan-total {
+    font-weight: 700;
+}
+
+.plan-modal-content {
+    border: 0;
+    border-radius: 1.1rem;
+    box-shadow: 0 1.5rem 4rem rgba(33, 37, 41, 0.16);
+}
+
+.plan-modal-content .form-control,
+.plan-modal-content .form-select,
+.plan-modal-content .input-group-text {
+    min-height: 2.85rem;
+    border-color: #dee2e6;
+}
+
+.plan-modal-content .form-control,
+.plan-modal-content .form-select {
+    border-radius: 0.7rem;
+}
+
+.plan-modal-content .input-group-text {
+    border-radius: 0.7rem 0 0 0.7rem;
+    background-color: #f8f9fa;
+}
+
+.plan-modal-content .input-group .form-control {
+    border-radius: 0 0.7rem 0.7rem 0;
+}
+
+.plan-modal-content .modal-footer .btn {
+    min-height: 2.65rem;
+    border-radius: 0.7rem;
+    font-weight: 600;
+}
+
+.plan-radio-option {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.9rem 1rem;
+    border: 1px solid #dee2e6;
+    border-radius: 0.8rem;
+}
+
+.plan-radio-option:has(.form-check-input:checked) {
+    border-color: #86b7fe;
+    background-color: rgba(13, 110, 253, 0.04);
+}
+
+.plan-radio-option .form-check-input {
+    flex: 0 0 auto;
+    margin-top: 0.25rem;
+}
+
+@media (max-width: 767.98px) {
+    .plan-month-navigation {
+        grid-template-columns: auto minmax(0, 1fr) auto;
+    }
+
+    .plan-saved-months {
+        grid-column: 1 / -1;
+    }
+
+    .plan-saved-months .btn {
+        width: 100%;
+    }
+
+    .plan-months {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        width: 100%;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .plan-page {
+        padding-right: 0.25rem;
+        padding-left: 0.25rem;
+    }
+
+    .plan-month-card .card-body {
+        padding-right: 0.65rem !important;
+        padding-left: 0.65rem !important;
+    }
+
+    .plan-month-navigation {
+        gap: 0.25rem;
+    }
+
+    .plan-month-option {
+        padding-right: 0.3rem;
+        padding-left: 0.3rem;
+        font-size: 0.82rem;
+    }
+
+    .plan-category-row {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 0.6rem;
+        padding: 1rem;
+    }
+
+    .plan-category-actions,
+    .plan-amount-input {
+        width: 100%;
+    }
+
+    .plan-category-actions .dropdown {
+        flex: 0 0 auto;
+    }
+
+    .plan-tabs {
+        width: 100%;
+    }
+}

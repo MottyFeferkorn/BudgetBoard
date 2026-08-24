@@ -30,6 +30,9 @@
         rel="stylesheet"
         href="{{ url_for('static', filename='style.css') }}"
     >
+
+    {% block styles %}
+    {% endblock %}
 </head>
 
 <body>
