@@ -193,7 +193,7 @@
                                     <th scope="col">Description</th>
                                     <th scope="col">Category</th>
                                     <th scope="col">Account</th>
-                                    <th class="text-end" scope="col">Amount</th>
+                                    <th class="income-amount-column" scope="col">Amount</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -203,7 +203,7 @@
                                         <td><span class="fw-semibold">{{ entry["description"] or "" }}</span></td>
                                         <td><span class="income-category">{{ entry["category"] }}</span></td>
                                         <td>{{ entry["account"] }}</td>
-                                        <td class="text-end fw-semibold text-success">{{ entry["amount"] | usd }}</td>
+                                        <td class="income-amount-column fw-semibold text-success">{{ entry["amount"] | usd }}</td>
                                     </tr>
                                 {% else %}
                                     <tr>

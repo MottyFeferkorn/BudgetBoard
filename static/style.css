@@ -525,6 +525,12 @@ main {
     background-color: rgba(13, 110, 253, 0.025);
 }
 
+.income-table .income-amount-column {
+    width: 11rem;
+    text-align: center;
+    white-space: nowrap;
+}
+
 .income-category {
     display: inline-flex;
     align-items: center;
