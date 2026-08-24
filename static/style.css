@@ -798,6 +798,24 @@ main {
     color: #6f42c1;
 }
 
+.account-icon-credit-card,
+.account-type-credit-card {
+    background-color: rgba(13, 202, 240, 0.12);
+    color: #087990;
+}
+
+.account-icon-investment,
+.account-type-investment {
+    background-color: rgba(255, 193, 7, 0.18);
+    color: #856404;
+}
+
+.account-icon-other,
+.account-type-other {
+    background-color: rgba(108, 117, 125, 0.12);
+    color: #495057;
+}
+
 .account-type {
     display: inline-flex;
     align-items: center;

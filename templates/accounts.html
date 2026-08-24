@@ -35,14 +35,14 @@
                                 </div>
                                 <div>
                                     <p class="text-secondary small mb-1">Total balance</p>
-                                    <p class="display-6 fw-bold mb-0">$18,250.00</p>
+                                    <p class="display-6 fw-bold mb-0">{{ total_balance | usd }}</p>
                                 </div>
                             </div>
                         </div>
                         <div class="col-sm-5">
                             <div class="accounts-summary-detail ps-sm-4">
                                 <p class="text-secondary small mb-1">Number of accounts</p>
-                                <p class="h5 fw-semibold mb-0">3 accounts</p>
+                                <p class="h5 fw-semibold mb-0">{{ account_count }} account{% if account_count != 1 %}s{% endif %}</p>
                             </div>
                         </div>
                     </div>
@@ -50,110 +50,91 @@
             </div>
 
             <div class="row g-4">
-                <div class="col-12 col-md-6 col-xl-4">
-                    <article class="card account-card border-0 h-100">
-                        <div class="card-body p-4">
-                            <div class="d-flex align-items-start justify-content-between gap-3 mb-4">
-                                <div class="d-flex align-items-center gap-3 min-w-0">
-                                    <div class="account-icon account-icon-checking" aria-hidden="true">
-                                        <i class="bi bi-bank"></i>
+                {% for account in accounts %}
+                    <div class="col-12 col-md-6 col-xl-4">
+                        <article class="card account-card border-0 h-100">
+                            <div class="card-body p-4">
+                                <div class="d-flex align-items-start justify-content-between gap-3 mb-4">
+                                    <div class="d-flex align-items-center gap-3 min-w-0">
+                                        <div class="account-icon account-icon-{{ account.type | replace(' ', '-') }}" aria-hidden="true">
+                                            {% if account.type == "checking" %}
+                                                <i class="bi bi-bank"></i>
+                                            {% elif account.type == "savings" %}
+                                                <i class="bi bi-piggy-bank"></i>
+                                            {% elif account.type == "cash" %}
+                                                <i class="bi bi-cash-stack"></i>
+                                            {% elif account.type == "credit card" %}
+                                                <i class="bi bi-credit-card"></i>
+                                            {% elif account.type == "investment" %}
+                                                <i class="bi bi-graph-up-arrow"></i>
+                                            {% else %}
+                                                <i class="bi bi-wallet2"></i>
+                                            {% endif %}
+                                        </div>
+                                        <div class="min-w-0">
+                                            <h2 class="h5 fw-bold text-truncate mb-1">{{ account.name }}</h2>
+                                            <span class="account-type account-type-{{ account.type | replace(' ', '-') }}">
+                                                {{ account.type | title }}
+                                            </span>
+                                        </div>
                                     </div>
-                                    <div class="min-w-0">
-                                        <h2 class="h5 fw-bold text-truncate mb-1">Main Checking</h2>
-                                        <span class="account-type account-type-checking">Checking</span>
+
+                                    <div class="dropdown">
+                                        <button
+                                            class="btn account-menu-button"
+                                            type="button"
+                                            data-bs-toggle="dropdown"
+                                            aria-expanded="false"
+                                            aria-label="Open {{ account.name }} account menu"
+                                        >
+                                            <i class="bi bi-three-dots"></i>
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu-end account-menu shadow-sm">
+                                            <li>
+                                                <button class="dropdown-item" type="button">
+                                                    <i class="bi bi-pencil me-2"></i>Edit account
+                                                </button>
+                                            </li>
+                                            <li><hr class="dropdown-divider"></li>
+                                            <li>
+                                                <button class="dropdown-item text-danger" type="button">
+                                                    <i class="bi bi-trash3 me-2"></i>Delete account
+                                                </button>
+                                            </li>
+                                        </ul>
                                     </div>
                                 </div>
-                                <div class="dropdown">
-                                    <button class="btn account-menu-button" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Open Main Checking account menu">
-                                        <i class="bi bi-three-dots"></i>
-                                    </button>
-                                    <ul class="dropdown-menu dropdown-menu-end account-menu shadow-sm">
-                                        <li><button class="dropdown-item" type="button"><i class="bi bi-pencil me-2"></i>Edit account</button></li>
-                                        <li><hr class="dropdown-divider"></li>
-                                        <li><button class="dropdown-item text-danger" type="button"><i class="bi bi-trash3 me-2"></i>Delete account</button></li>
-                                    </ul>
+
+                                <p class="text-secondary small mb-1">Bank</p>
+                                <p class="fw-medium mb-4">{{ account.bank or "None" }}</p>
+                                <div class="account-balance pt-3 border-top">
+                                    <p class="text-secondary small mb-1">Current balance</p>
+                                    <p class="h3 fw-bold mb-0">{{ account.balance | usd }}</p>
                                 </div>
                             </div>
-
-                            <p class="text-secondary small mb-1">Bank</p>
-                            <p class="fw-medium mb-4">Chase</p>
-                            <div class="account-balance pt-3 border-top">
-                                <p class="text-secondary small mb-1">Current balance</p>
-                                <p class="h3 fw-bold mb-0">$4,250.00</p>
+                        </article>
+                    </div>
+                {% else %}
+                    <div class="col-12">
+                        <div class="card account-card border-0 text-center">
+                            <div class="card-body p-5">
+                                <div class="accounts-summary-icon mx-auto mb-3" aria-hidden="true">
+                                    <i class="bi bi-wallet2"></i>
+                                </div>
+                                <h2 class="h5 fw-bold mb-2">No accounts yet</h2>
+                                <p class="text-secondary mb-4">Add your first account to start tracking its balance.</p>
+                                <button
+                                    class="btn btn-primary accounts-add-button px-4"
+                                    type="button"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#addAccountModal"
+                                >
+                                    <span class="me-1" aria-hidden="true">+</span> Add Account
+                                </button>
                             </div>
                         </div>
-                    </article>
-                </div>
-
-                <div class="col-12 col-md-6 col-xl-4">
-                    <article class="card account-card border-0 h-100">
-                        <div class="card-body p-4">
-                            <div class="d-flex align-items-start justify-content-between gap-3 mb-4">
-                                <div class="d-flex align-items-center gap-3 min-w-0">
-                                    <div class="account-icon account-icon-savings" aria-hidden="true">
-                                        <i class="bi bi-piggy-bank"></i>
-                                    </div>
-                                    <div class="min-w-0">
-                                        <h2 class="h5 fw-bold text-truncate mb-1">Savings</h2>
-                                        <span class="account-type account-type-savings">Savings</span>
-                                    </div>
-                                </div>
-                                <div class="dropdown">
-                                    <button class="btn account-menu-button" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Open Savings account menu">
-                                        <i class="bi bi-three-dots"></i>
-                                    </button>
-                                    <ul class="dropdown-menu dropdown-menu-end account-menu shadow-sm">
-                                        <li><button class="dropdown-item" type="button"><i class="bi bi-pencil me-2"></i>Edit account</button></li>
-                                        <li><hr class="dropdown-divider"></li>
-                                        <li><button class="dropdown-item text-danger" type="button"><i class="bi bi-trash3 me-2"></i>Delete account</button></li>
-                                    </ul>
-                                </div>
-                            </div>
-
-                            <p class="text-secondary small mb-1">Bank</p>
-                            <p class="fw-medium mb-4">Capital One</p>
-                            <div class="account-balance pt-3 border-top">
-                                <p class="text-secondary small mb-1">Current balance</p>
-                                <p class="h3 fw-bold mb-0">$12,500.00</p>
-                            </div>
-                        </div>
-                    </article>
-                </div>
-
-                <div class="col-12 col-md-6 col-xl-4">
-                    <article class="card account-card border-0 h-100">
-                        <div class="card-body p-4">
-                            <div class="d-flex align-items-start justify-content-between gap-3 mb-4">
-                                <div class="d-flex align-items-center gap-3 min-w-0">
-                                    <div class="account-icon account-icon-cash" aria-hidden="true">
-                                        <i class="bi bi-cash-stack"></i>
-                                    </div>
-                                    <div class="min-w-0">
-                                        <h2 class="h5 fw-bold text-truncate mb-1">Cash Wallet</h2>
-                                        <span class="account-type account-type-cash">Cash</span>
-                                    </div>
-                                </div>
-                                <div class="dropdown">
-                                    <button class="btn account-menu-button" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Open Cash Wallet account menu">
-                                        <i class="bi bi-three-dots"></i>
-                                    </button>
-                                    <ul class="dropdown-menu dropdown-menu-end account-menu shadow-sm">
-                                        <li><button class="dropdown-item" type="button"><i class="bi bi-pencil me-2"></i>Edit account</button></li>
-                                        <li><hr class="dropdown-divider"></li>
-                                        <li><button class="dropdown-item text-danger" type="button"><i class="bi bi-trash3 me-2"></i>Delete account</button></li>
-                                    </ul>
-                                </div>
-                            </div>
-
-                            <p class="text-secondary small mb-1">Bank</p>
-                            <p class="fw-medium mb-4">None</p>
-                            <div class="account-balance pt-3 border-top">
-                                <p class="text-secondary small mb-1">Current balance</p>
-                                <p class="h3 fw-bold mb-0">$1,500.00</p>
-                            </div>
-                        </div>
-                    </article>
-                </div>
+                    </div>
+                {% endfor %}
             </div>
         </div>
     </section>

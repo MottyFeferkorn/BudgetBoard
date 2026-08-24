@@ -171,9 +171,64 @@ def expenses(limit):
 
 @app.route("/accounts", methods=["GET", "POST"])
 def accounts():
-    # Display the Accounts page when it is opened normally.
+    # Load each account with separately aggregated income and expense totals.
     if request.method == "GET":
-        return render_template("accounts.html")
+        user_id = session["user_id"]
+
+        account_rows = db.execute(
+            """
+            SELECT
+                accounts.id,
+                accounts.name,
+                accounts.type,
+                accounts.bank,
+                COALESCE(income_totals.total_income, 0) AS total_income,
+                COALESCE(expense_totals.total_expenses, 0) AS total_expenses
+            FROM accounts
+
+            LEFT JOIN (
+                SELECT
+                    account_id,
+                    SUM(amount) AS total_income
+                FROM income
+                WHERE user_id = ?
+                GROUP BY account_id
+            ) AS income_totals
+                ON income_totals.account_id = accounts.id
+
+            LEFT JOIN (
+                SELECT
+                    account_id,
+                    SUM(amount) AS total_expenses
+                FROM expenses
+                WHERE user_id = ?
+                GROUP BY account_id
+            ) AS expense_totals
+                ON expense_totals.account_id = accounts.id
+
+            WHERE accounts.user_id = ?
+            ORDER BY accounts.name
+            """,
+            user_id,
+            user_id,
+            user_id
+        )
+
+        # Calculate each account balance and the combined balance in Python.
+        total_balance = 0
+
+        for account in account_rows:
+            account["balance"] = (
+                account["total_income"] - account["total_expenses"]
+            )
+            total_balance += account["balance"]
+
+        return render_template(
+            "accounts.html",
+            accounts=account_rows,
+            total_balance=total_balance,
+            account_count=len(account_rows)
+        )
 
     # Read and clean the submitted account details.
     name = (request.form.get("account_name") or "").strip()
