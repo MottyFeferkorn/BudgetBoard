@@ -1,6 +1,7 @@
 import re
 from datetime import datetime
 from decimal import Decimal, InvalidOperation
+from urllib.parse import urlencode
 
 from cs50 import SQL
 from flask import Flask, flash, redirect, render_template, request, session, make_response, url_for
@@ -147,22 +148,32 @@ def logout():
     session.clear()
     return redirect("/")
 
-@app.route("/income", defaults={"limit": 10}, methods=["GET", "POST"])
-@app.route("/income/<int:limit>", methods=["GET", "POST"])
+@app.route("/income", defaults={"limit": "10"}, methods=["GET", "POST"])
+@app.route("/income/<limit>", methods=["GET", "POST"])
 def income(limit):
     # Authentication will be handled by a reusable decorator later.
     user_id = session["user_id"]
 
-    # Keep the URL-controlled page size within the options offered by the page.
+    # Support the three preview sizes followed by an unpaginated final view.
     allowed_limits = (10, 25, 50)
-    if limit not in allowed_limits:
-        limit = 10
+    show_all = limit == "all"
 
-    # Field-specific errors are passed back to the modal instead of being flashed.
+    if show_all:
+        page_limit = None
+    else:
+        try:
+            page_limit = int(limit)
+        except ValueError:
+            page_limit = 10
+
+        if page_limit not in allowed_limits:
+            page_limit = 10
+
+    # Field-specific Add Income errors are displayed inside its modal.
     errors = {}
 
     if request.method == "POST":
-        # Read and clean the submitted values before validating them.
+        # Read and clean the submitted income values.
         amount_text = (request.form.get("amount") or "").strip()
         category_name = (request.form.get("category") or "").strip()
 
@@ -175,7 +186,7 @@ def income(limit):
         cents_amount = None
         account_id = None
 
-        # Decimal validates money precisely before it is converted for SQLite.
+        # Decimal validates the amount before SQLite receives a numeric value.
         try:
             amount = Decimal(amount_text)
             cents_amount = amount.quantize(Decimal("0.01"))
@@ -191,17 +202,16 @@ def income(limit):
                 "than two decimal places."
             )
 
-        # Categories are required and limited to a practical display length.
+        # Validate text fields before storing them.
         if not category_name:
             errors["category"] = "Income category is required."
         elif len(category_name) > 50:
             errors["category"] = "Income category must be 50 characters or fewer."
 
-        # An empty description is stored as SQL NULL.
         if description and len(description) > 150:
             errors["description"] = "Description must be 150 characters or fewer."
 
-        # Verify the account ID and make sure it belongs to the current user.
+        # Confirm the submitted account belongs to the current user.
         try:
             account_id = int(account_id_text)
         except ValueError:
@@ -215,14 +225,14 @@ def income(limit):
             if len(account_rows) != 1:
                 errors["account_id"] = "Select a valid account."
 
-        # Require the exact date format submitted by an HTML date input.
+        # HTML date inputs submit values in YYYY-MM-DD format.
         try:
             datetime.strptime(income_date, "%Y-%m-%d")
         except ValueError:
             errors["date"] = "Select a valid income date."
 
         if errors:
-            # Preserve safe values so the user can correct the invalid fields.
+            # Preserve safe values while the user corrects the invalid fields.
             form_data = {
                 "amount": amount_text,
                 "category": category_name,
@@ -247,7 +257,7 @@ def income(limit):
             if category_rows:
                 category_id = category_rows[0]["id"]
             else:
-                # Save a new category so it becomes a future form suggestion.
+                # New categories become suggestions on future submissions.
                 category_id = db.execute(
                     """
                     INSERT INTO categories (user_id, name, type)
@@ -257,7 +267,7 @@ def income(limit):
                     category_name
                 )
 
-            # SQLite cannot bind Decimal directly, so pass the validated value as a float.
+            # SQLite cannot bind Decimal directly, so use the validated float value.
             db.execute(
                 """
                 INSERT INTO income (
@@ -278,10 +288,16 @@ def income(limit):
                 income_date
             )
 
-            # Redirect after insertion to prevent a refresh from resubmitting the form.
-            return redirect(url_for("income", limit=limit, added=1))
+            # Redirect after insertion so refreshing cannot duplicate the entry.
+            return redirect(
+                url_for(
+                    "income",
+                    limit="all" if show_all else page_limit,
+                    added=1
+                )
+            )
     else:
-        # Supply clean defaults when the page is opened normally.
+        # Supply clean form defaults for a normal page request.
         form_data = {
             "amount": "",
             "category": "",
@@ -290,7 +306,7 @@ def income(limit):
             "date": datetime.now().strftime("%Y-%m-%d")
         }
 
-    # GET requests and invalid POST requests both need form choices.
+    # GET requests and invalid POST requests need these form and filter choices.
     accounts = db.execute(
         "SELECT id, name FROM accounts WHERE user_id = ? ORDER BY name",
         user_id
@@ -305,9 +321,146 @@ def income(limit):
         user_id
     )
 
-    # Fetch one extra row to decide whether the Load More link is necessary.
-    entries = db.execute(
-        """
+    # Read the active search, filter, and sorting values from the URL.
+    search = (request.args.get("q") or "").strip()
+    start_date = (request.args.get("start") or "").strip()
+    end_date = (request.args.get("end") or "").strip()
+    minimum_text = (request.args.get("min") or "").strip()
+    maximum_text = (request.args.get("max") or "").strip()
+    selected_sort = request.args.get("sort") or "newest"
+
+    # Repeated query parameters allow multiple categories and accounts.
+    selected_categories = []
+    for value in request.args.getlist("category"):
+        try:
+            selected_categories.append(int(value))
+        except ValueError:
+            continue
+
+    selected_accounts = []
+    for value in request.args.getlist("account"):
+        try:
+            selected_accounts.append(int(value))
+        except ValueError:
+            continue
+
+    filter_errors = {}
+    minimum_amount = None
+    maximum_amount = None
+    parsed_start_date = None
+    parsed_end_date = None
+
+    # Validate both ends of the optional date range.
+    if start_date:
+        try:
+            parsed_start_date = datetime.strptime(start_date, "%Y-%m-%d").date()
+        except ValueError:
+            filter_errors["date"] = "Select a valid date range."
+
+    if end_date:
+        try:
+            parsed_end_date = datetime.strptime(end_date, "%Y-%m-%d").date()
+        except ValueError:
+            filter_errors["date"] = "Select a valid date range."
+
+    if (
+        parsed_start_date
+        and parsed_end_date
+        and parsed_start_date > parsed_end_date
+    ):
+        filter_errors["date"] = "The start date must be before the end date."
+
+    # Validate both ends of the optional amount range.
+    if minimum_text:
+        try:
+            minimum_amount = Decimal(minimum_text)
+            if not minimum_amount.is_finite() or minimum_amount < 0:
+                raise InvalidOperation
+        except (InvalidOperation, ValueError):
+            minimum_amount = None
+            filter_errors["amount"] = "Enter a valid minimum amount."
+
+    if maximum_text:
+        try:
+            maximum_amount = Decimal(maximum_text)
+            if not maximum_amount.is_finite() or maximum_amount < 0:
+                raise InvalidOperation
+        except (InvalidOperation, ValueError):
+            maximum_amount = None
+            filter_errors["amount"] = "Enter a valid maximum amount."
+
+    if (
+        minimum_amount is not None
+        and maximum_amount is not None
+        and minimum_amount > maximum_amount
+    ):
+        filter_errors["amount"] = (
+            "The minimum amount cannot exceed the maximum amount."
+        )
+
+    # Every query begins by restricting results to the current user.
+    conditions = ["income.user_id = ?"]
+    parameters = [user_id]
+
+    # Search descriptions, categories, and accounts together.
+    if search:
+        search_pattern = f"%{search}%"
+        conditions.append(
+            """
+            (
+                COALESCE(income.description, '') LIKE ? COLLATE NOCASE
+                OR categories.name LIKE ? COLLATE NOCASE
+                OR accounts.name LIKE ? COLLATE NOCASE
+            )
+            """
+        )
+        parameters.extend([search_pattern, search_pattern, search_pattern])
+
+    if parsed_start_date and "date" not in filter_errors:
+        conditions.append("date(income.date) >= date(?)")
+        parameters.append(start_date)
+
+    if parsed_end_date and "date" not in filter_errors:
+        conditions.append("date(income.date) <= date(?)")
+        parameters.append(end_date)
+
+    if selected_categories:
+        placeholders = ", ".join("?" for _ in selected_categories)
+        conditions.append(f"income.category_id IN ({placeholders})")
+        parameters.extend(selected_categories)
+
+    if selected_accounts:
+        placeholders = ", ".join("?" for _ in selected_accounts)
+        conditions.append(f"income.account_id IN ({placeholders})")
+        parameters.extend(selected_accounts)
+
+    if minimum_amount is not None and "amount" not in filter_errors:
+        conditions.append("income.amount >= ?")
+        parameters.append(float(minimum_amount))
+
+    if maximum_amount is not None and "amount" not in filter_errors:
+        conditions.append("income.amount <= ?")
+        parameters.append(float(maximum_amount))
+
+    # Map public sort names to trusted SQL instead of using raw URL text.
+    sort_options = {
+        "newest": "income.date DESC, income.id DESC",
+        "oldest": "income.date ASC, income.id ASC",
+        "amount_desc": "income.amount DESC, income.date DESC",
+        "amount_asc": "income.amount ASC, income.date DESC",
+        "description": (
+            "COALESCE(income.description, '') COLLATE NOCASE ASC, "
+            "income.date DESC"
+        )
+    }
+
+    if selected_sort not in sort_options:
+        selected_sort = "newest"
+
+    where_sql = " AND ".join(conditions)
+    order_sql = sort_options[selected_sort]
+
+    entries_sql = f"""
         SELECT
             income.id,
             income.amount,
@@ -318,18 +471,25 @@ def income(limit):
         FROM income
         JOIN categories ON categories.id = income.category_id
         JOIN accounts ON accounts.id = income.account_id
-        WHERE income.user_id = ?
-        ORDER BY income.date DESC, income.id DESC
-        LIMIT ?
-        """,
-        user_id,
-        limit + 1
-    )
+        WHERE {where_sql}
+        ORDER BY {order_sql}
+    """
 
-    has_more = len(entries) > limit
-    entries = entries[:limit]
+    if show_all:
+        # The final view intentionally omits LIMIT.
+        entries = db.execute(entries_sql, *parameters)
+        has_more = False
+    else:
+        # One extra row tells the page whether Load More is needed.
+        entries = db.execute(
+            entries_sql + " LIMIT ?",
+            *parameters,
+            page_limit + 1
+        )
+        has_more = len(entries) > page_limit
+        entries = entries[:page_limit]
 
-    # Calculate the total and count for the user's current local month.
+    # The summary remains the unfiltered total for the current local month.
     summary = db.execute(
         """
         SELECT
@@ -343,8 +503,41 @@ def income(limit):
         user_id
     )[0]
 
-    # Move through the supported limits only while another entry exists.
-    next_limit = {10: 25, 25: 50, 50: None}[limit] if has_more else None
+    # Advance from 10 to 25, then 50, and finally all remaining rows.
+    next_limit = None
+    if has_more:
+        if page_limit == 10:
+            next_limit = 25
+        elif page_limit == 25:
+            next_limit = 50
+        elif page_limit == 50:
+            next_limit = "all"
+
+    # Preserve active GET filters when building the next page link.
+    next_page_url = None
+    if next_limit is not None:
+        next_arguments = request.args.to_dict(flat=False)
+        next_arguments.pop("added", None)
+
+        next_path = url_for("income", limit=next_limit)
+        next_query = urlencode(next_arguments, doseq=True)
+
+        next_page_url = (
+            f"{next_path}?{next_query}"
+            if next_query
+            else next_path
+        )
+
+    filters = {
+        "q": search,
+        "start": start_date,
+        "end": end_date,
+        "categories": selected_categories,
+        "accounts": selected_accounts,
+        "min": minimum_text,
+        "max": maximum_text,
+        "sort": selected_sort
+    }
 
     return render_template(
         "income.html",
@@ -353,9 +546,12 @@ def income(limit):
         entries=entries,
         summary=summary,
         errors=errors,
+        filter_errors=filter_errors,
         form_data=form_data,
-        current_limit=limit,
-        next_limit=next_limit
+        filters=filters,
+        current_limit="all" if show_all else page_limit,
+        next_page_url=next_page_url,
+        showing_all=show_all
     ), 400 if errors else 200
 
 @app.route("/accounts", methods=["GET", "POST"])

@@ -480,6 +480,17 @@ main {
     border-radius: 0 0.75rem 0.75rem 0;
 }
 
+.income-sort-select,
+.income-filter-submit,
+.income-filter-clear {
+    min-height: 2.75rem;
+    border-radius: 0.75rem;
+}
+
+.income-sort-select {
+    min-width: 11rem;
+}
+
 .income-list-card .btn-outline-secondary {
     border-color: #dee2e6;
     border-radius: 0.75rem;
