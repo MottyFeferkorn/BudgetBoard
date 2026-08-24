@@ -481,7 +481,6 @@ main {
 }
 
 .income-sort-select,
-.income-filter-submit,
 .income-filter-clear {
     min-height: 2.75rem;
     border-radius: 0.75rem;
@@ -489,6 +488,17 @@ main {
 
 .income-sort-select {
     min-width: 11rem;
+}
+
+#income-results-card .table-responsive,
+#income-results-card #income-pagination {
+    transition: opacity 0.15s ease;
+}
+
+#income-results-card.income-is-loading .table-responsive,
+#income-results-card.income-is-loading #income-pagination {
+    opacity: 0.45;
+    pointer-events: none;
 }
 
 .income-list-card .btn-outline-secondary {

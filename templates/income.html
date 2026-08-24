@@ -88,9 +88,14 @@
                 </div>
             </div>
 
-            <div class="card income-list-card border-0">
+            <div class="card income-list-card border-0" id="income-results-card">
                 <div class="card-body p-0">
-                    <form class="p-3 p-lg-4 border-bottom" action="{{ url_for('income') }}" method="get">
+                    <form
+                        id="income-filter-form"
+                        class="p-3 p-lg-4 border-bottom"
+                        action="{{ url_for('income') }}"
+                        method="get"
+                    >
                         <div class="row g-2 align-items-center">
                             <div class="col-12 col-xl">
                                 <div class="input-group income-search">
@@ -102,6 +107,7 @@
                                     </span>
                                     <input
                                         class="form-control border-start-0 ps-0"
+                                        id="income-search-input"
                                         name="q"
                                         type="search"
                                         value="{{ filters['q'] }}"
@@ -127,9 +133,12 @@
                             <div class="col-6 col-sm-auto dropdown">
                                 <button class="btn btn-outline-secondary w-100 dropdown-toggle" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
                                     Category
-                                    {% if filters["categories"] %}
-                                        <span class="badge rounded-pill text-bg-primary ms-1">{{ filters["categories"] | length }}</span>
-                                    {% endif %}
+                                    <span
+                                        class="badge rounded-pill text-bg-primary ms-1 {% if not filters['categories'] %}d-none{% endif %}"
+                                        id="category-filter-count"
+                                    >
+                                        {{ filters["categories"] | length }}
+                                    </span>
                                 </button>
                                 <div class="dropdown-menu dropdown-menu-end income-filter-menu p-3">
                                     <p class="small fw-semibold mb-2">Income category</p>
@@ -156,9 +165,12 @@
                             <div class="col-6 col-sm-auto dropdown">
                                 <button class="btn btn-outline-secondary w-100 dropdown-toggle" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
                                     Account
-                                    {% if filters["accounts"] %}
-                                        <span class="badge rounded-pill text-bg-primary ms-1">{{ filters["accounts"] | length }}</span>
-                                    {% endif %}
+                                    <span
+                                        class="badge rounded-pill text-bg-primary ms-1 {% if not filters['accounts'] %}d-none{% endif %}"
+                                        id="account-filter-count"
+                                    >
+                                        {{ filters["accounts"] | length }}
+                                    </span>
                                 </button>
                                 <div class="dropdown-menu dropdown-menu-end income-filter-menu p-3">
                                     <p class="small fw-semibold mb-2">Deposited to</p>
@@ -211,20 +223,29 @@
                                 </select>
                             </div>
 
-                            <div class="col-6 col-sm-auto">
-                                <button class="btn btn-primary w-100 income-filter-submit" type="submit">Apply</button>
-                            </div>
+                            <button class="visually-hidden" type="submit">Apply filters</button>
 
-                            <div class="col-6 col-sm-auto">
-                                <a class="btn btn-light w-100 income-filter-clear" href="{{ url_for('income') }}">Clear</a>
+                            <div class="col-12 col-sm-auto">
+                                <a
+                                    class="btn btn-light w-100 income-filter-clear"
+                                    id="income-filter-clear"
+                                    href="{{ url_for('income') }}"
+                                >
+                                    Clear
+                                </a>
                             </div>
                         </div>
 
-                        {% if filter_errors %}
-                            <div class="small text-danger mt-3" role="alert">
+                        <div
+                            class="small text-danger mt-3"
+                            id="income-filter-errors"
+                            role="alert"
+                            aria-live="polite"
+                        >
+                            {% if filter_errors %}
                                 {{ filter_errors.values() | join(" ") }}
-                            </div>
-                        {% endif %}
+                            {% endif %}
+                        </div>
                     </form>
 
                     <div class="table-responsive">
@@ -245,7 +266,7 @@
                                     <th class="income-amount-column" scope="col">Amount</th>
                                 </tr>
                             </thead>
-                            <tbody>
+                            <tbody id="income-results-body">
                                 {% for entry in entries %}
                                     <tr>
                                         <td><span class="text-nowrap">{{ entry["display_date"] }}</span></td>
@@ -265,7 +286,7 @@
                         </table>
                     </div>
 
-                    <div class="text-center p-4 border-top">
+                    <div class="text-center p-4 border-top" id="income-pagination">
                         {% if next_page_url %}
                             <a class="btn btn-outline-primary px-4" href="{{ next_page_url }}">
                                 {{ "Load all" if current_limit == 50 else "Load more" }}
