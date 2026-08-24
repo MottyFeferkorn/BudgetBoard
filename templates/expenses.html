@@ -1,42 +1,42 @@
 {% extends "layout.html" %}
 
 {% block title %}
-    Income
+    Expenses
 {% endblock %}
 
 {% block main %}
-    <section class="income-page py-4 py-lg-5">
+    <section class="income-page expense-page py-4 py-lg-5">
         <div class="container-xl">
             {% if request.args.get("added") == "1" %}
                 <div class="alert alert-success alert-dismissible fade show" role="alert">
-                    Income added successfully.
+                    Expense added successfully.
                     <button class="btn-close" type="button" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>
             {% endif %}
 
             <div class="d-flex flex-column flex-sm-row align-items-sm-center justify-content-between gap-3 mb-4">
                 <div>
-                    <p class="income-eyebrow mb-1">Money in</p>
-                    <h1 class="h2 fw-bold mb-1">Income</h1>
-                    <p class="text-secondary mb-0">Track every payment and see where your money comes from.</p>
+                    <p class="income-eyebrow expense-eyebrow mb-1">Money out</p>
+                    <h1 class="h2 fw-bold mb-1">Expenses</h1>
+                    <p class="text-secondary mb-0">Track every purchase and see where your money goes.</p>
                 </div>
 
                 <div class="btn-group income-add-group align-self-start align-self-sm-center">
                     <button
-                        class="btn btn-primary px-4"
+                        class="btn btn-danger px-4"
                         type="button"
                         data-bs-toggle="modal"
                         data-bs-target="#addTransactionModal"
                     >
-                        <span class="me-1" aria-hidden="true">+</span> Add Income
+                        <span class="me-1" aria-hidden="true">+</span> Add Expense
                     </button>
                     <button
-                        class="btn btn-primary dropdown-toggle dropdown-toggle-split"
+                        class="btn btn-danger dropdown-toggle dropdown-toggle-split"
                         type="button"
                         data-bs-toggle="dropdown"
                         aria-expanded="false"
                     >
-                        <span class="visually-hidden">Open income actions</span>
+                        <span class="visually-hidden">Open expense actions</span>
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end shadow-sm">
                         <li>
@@ -46,7 +46,7 @@
                                 data-bs-toggle="modal"
                                 data-bs-target="#addTransactionModal"
                             >
-                                Add income
+                                Add expense
                             </button>
                         </li>
                         <li>
@@ -54,33 +54,33 @@
                                 class="dropdown-item"
                                 type="button"
                                 data-bs-toggle="modal"
-                                data-bs-target="#recurringIncomeModal"
+                                data-bs-target="#recurringExpenseModal"
                             >
-                                Set up recurring income
+                                Set up recurring expense
                             </button>
                         </li>
                     </ul>
                 </div>
             </div>
 
-            <div class="card income-summary-card border-0 mb-4">
+            <div class="card income-summary-card expense-summary-card border-0 mb-4">
                 <div class="card-body p-4">
                     <div class="row align-items-center g-4">
                         <div class="col-sm-7">
                             <div class="d-flex align-items-center gap-3">
-                                <div class="income-summary-icon" aria-hidden="true">$</div>
+                                <div class="income-summary-icon expense-summary-icon" aria-hidden="true">$</div>
                                 <div>
-                                    <p class="text-secondary small mb-1">This month's total income</p>
+                                    <p class="text-secondary small mb-1">This month's total expenses</p>
                                     <p class="display-6 fw-bold mb-0">{{ summary["total"] | usd }}</p>
                                 </div>
                             </div>
                         </div>
                         <div class="col-sm-5">
                             <div class="income-summary-detail ps-sm-4">
-                                <p class="text-secondary small mb-1">Income received</p>
+                                <p class="text-secondary small mb-1">Expenses recorded</p>
                                 <p class="h5 fw-semibold mb-0">
                                     {{ summary["count"] }}
-                                    {{ "payment" if summary["count"] == 1 else "payments" }}
+                                    {{ "expense" if summary["count"] == 1 else "expenses" }}
                                 </p>
                             </div>
                         </div>
@@ -93,7 +93,7 @@
                     <form
                         id="transaction-filter-form"
                         class="p-3 p-lg-4 border-bottom"
-                        action="{{ url_for('income') }}"
+                        action="{{ url_for('expenses') }}"
                         method="get"
                     >
                         <div class="row g-2 align-items-center">
@@ -111,8 +111,8 @@
                                         name="q"
                                         type="search"
                                         value="{{ filters['q'] }}"
-                                        placeholder="Search income"
-                                        aria-label="Search income"
+                                        placeholder="Search expenses"
+                                        aria-label="Search expenses"
                                     >
                                 </div>
                             </div>
@@ -134,14 +134,14 @@
                                 <button class="btn btn-outline-secondary w-100 dropdown-toggle" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
                                     Category
                                     <span
-                                        class="badge rounded-pill text-bg-primary ms-1 {% if not filters['categories'] %}d-none{% endif %}"
+                                        class="badge rounded-pill text-bg-danger ms-1 {% if not filters['categories'] %}d-none{% endif %}"
                                         id="category-filter-count"
                                     >
                                         {{ filters["categories"] | length }}
                                     </span>
                                 </button>
                                 <div class="dropdown-menu dropdown-menu-end income-filter-menu p-3">
-                                    <p class="small fw-semibold mb-2">Income category</p>
+                                    <p class="small fw-semibold mb-2">Expense category</p>
                                     {% for category in categories %}
                                         <div class="form-check mb-2">
                                             <input
@@ -157,7 +157,7 @@
                                             </label>
                                         </div>
                                     {% else %}
-                                        <p class="small text-secondary mb-0">No income categories yet.</p>
+                                        <p class="small text-secondary mb-0">No expense categories yet.</p>
                                     {% endfor %}
                                 </div>
                             </div>
@@ -166,14 +166,14 @@
                                 <button class="btn btn-outline-secondary w-100 dropdown-toggle" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
                                     Account
                                     <span
-                                        class="badge rounded-pill text-bg-primary ms-1 {% if not filters['accounts'] %}d-none{% endif %}"
+                                        class="badge rounded-pill text-bg-danger ms-1 {% if not filters['accounts'] %}d-none{% endif %}"
                                         id="account-filter-count"
                                     >
                                         {{ filters["accounts"] | length }}
                                     </span>
                                 </button>
                                 <div class="dropdown-menu dropdown-menu-end income-filter-menu p-3">
-                                    <p class="small fw-semibold mb-2">Deposited to</p>
+                                    <p class="small fw-semibold mb-2">Paid from</p>
                                     {% for account in accounts %}
                                         <div class="form-check mb-2">
                                             <input
@@ -213,8 +213,8 @@
                             </div>
 
                             <div class="col-12 col-sm-auto">
-                                <label class="visually-hidden" for="income-sort">Sort income</label>
-                                <select class="form-select income-sort-select" id="income-sort" name="sort">
+                                <label class="visually-hidden" for="expense-sort">Sort expenses</label>
+                                <select class="form-select income-sort-select" id="expense-sort" name="sort">
                                     <option value="newest" {% if filters["sort"] == "newest" %}selected{% endif %}>Newest first</option>
                                     <option value="oldest" {% if filters["sort"] == "oldest" %}selected{% endif %}>Oldest first</option>
                                     <option value="amount_desc" {% if filters["sort"] == "amount_desc" %}selected{% endif %}>Amount: high to low</option>
@@ -229,7 +229,7 @@
                                 <a
                                     class="btn btn-light w-100 income-filter-clear"
                                     id="transaction-filter-clear"
-                                    href="{{ url_for('income') }}"
+                                    href="{{ url_for('expenses') }}"
                                 >
                                     Clear
                                 </a>
@@ -271,14 +271,14 @@
                                     <tr>
                                         <td><span class="text-nowrap">{{ entry["display_date"] }}</span></td>
                                         <td><span class="fw-semibold">{{ entry["description"] or "" }}</span></td>
-                                        <td><span class="income-category">{{ entry["category"] }}</span></td>
+                                        <td><span class="income-category expense-category">{{ entry["category"] }}</span></td>
                                         <td>{{ entry["account"] }}</td>
-                                        <td class="income-amount-column fw-semibold text-success">{{ entry["amount"] | usd }}</td>
+                                        <td class="income-amount-column fw-semibold text-danger">{{ entry["amount"] | usd }}</td>
                                     </tr>
                                 {% else %}
                                     <tr>
                                         <td class="text-center text-secondary py-5" colspan="5">
-                                            No income has been recorded yet.
+                                            No expenses have been recorded yet.
                                         </td>
                                     </tr>
                                 {% endfor %}
@@ -288,11 +288,11 @@
 
                     <div class="text-center p-4 border-top" id="transaction-pagination">
                         {% if next_page_url %}
-                            <a class="btn btn-outline-primary px-4" href="{{ next_page_url }}">
+                            <a class="btn btn-outline-danger px-4" href="{{ next_page_url }}">
                                 {{ "Load all" if current_limit == 50 else "Load more" }}
                             </a>
                         {% elif showing_all and entries %}
-                            <span class="small text-secondary">Showing all income entries.</span>
+                            <span class="small text-secondary">Showing all expense entries.</span>
                         {% endif %}
                     </div>
                 </div>
@@ -302,29 +302,29 @@
 
     <div class="modal fade" id="addTransactionModal" tabindex="-1" aria-labelledby="addTransactionModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content income-modal-content">
+            <div class="modal-content income-modal-content expense-modal-content">
                 <div class="modal-header border-0 px-4 pt-4 pb-2">
                     <div>
-                        <h2 class="modal-title h4 fw-bold" id="addTransactionModalLabel">Add income</h2>
-                        <p class="text-secondary small mb-0">Record money you have received.</p>
+                        <h2 class="modal-title h4 fw-bold" id="addTransactionModalLabel">Add expense</h2>
+                        <p class="text-secondary small mb-0">Record money you have spent.</p>
                     </div>
                     <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <form
                     id="add-transaction-form"
-                    action="{{ url_for('income', limit=current_limit) }}"
+                    action="{{ url_for('expenses', limit=current_limit) }}"
                     method="post"
                     data-has-errors="{{ 'true' if errors else 'false' }}"
                     novalidate
                 >
                     <div class="modal-body px-4 py-3">
                         <div class="mb-3">
-                            <label class="form-label fw-medium" for="income-amount">Amount</label>
+                            <label class="form-label fw-medium" for="expense-amount">Amount</label>
                             <div class="input-group has-validation">
                                 <span class="input-group-text">$</span>
                                 <input
                                     class="form-control {% if errors.get('amount') %}is-invalid{% endif %}"
-                                    id="income-amount"
+                                    id="expense-amount"
                                     name="amount"
                                     type="number"
                                     min="0.01"
@@ -340,41 +340,41 @@
                             </div>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label fw-medium" for="income-category">Category</label>
+                            <label class="form-label fw-medium" for="expense-category">Category</label>
                             <input
                                 class="form-control {% if errors.get('category') %}is-invalid{% endif %}"
-                                id="income-category"
+                                id="expense-category"
                                 name="category"
                                 type="text"
-                                list="income-category-options"
+                                list="expense-category-options"
                                 maxlength="50"
                                 value="{{ form_data['category'] }}"
                                 placeholder="Choose or enter a category"
                                 autocomplete="off"
                                 required
                             >
-                            <datalist id="income-category-options">
+                            <datalist id="expense-category-options">
                                 {% for category in categories %}
                                     <option value="{{ category['name'] }}"></option>
                                 {% endfor %}
                             </datalist>
                             <div class="invalid-feedback">
-                                {{ errors.get("category", "Enter an income category.") }}
+                                {{ errors.get("category", "Enter an expense category.") }}
                             </div>
                             <div class="form-text">Previous categories appear as suggestions.</div>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label fw-medium" for="income-description">
+                            <label class="form-label fw-medium" for="expense-description">
                                 Description <span class="text-secondary fw-normal">(optional)</span>
                             </label>
                             <input
                                 class="form-control {% if errors.get('description') %}is-invalid{% endif %}"
-                                id="income-description"
+                                id="expense-description"
                                 name="description"
                                 type="text"
                                 maxlength="150"
                                 value="{{ form_data['description'] }}"
-                                placeholder="For example, August paycheck"
+                                placeholder="For example, weekly groceries"
                             >
                             <div class="invalid-feedback">
                                 {{ errors.get("description", "Description must be 150 characters or fewer.") }}
@@ -382,10 +382,10 @@
                         </div>
                         <div class="row g-3">
                             <div class="col-sm-6">
-                                <label class="form-label fw-medium" for="income-account">Account</label>
+                                <label class="form-label fw-medium" for="expense-account">Account</label>
                                 <select
                                     class="form-select {% if errors.get('account_id') %}is-invalid{% endif %}"
-                                    id="income-account"
+                                    id="expense-account"
                                     name="account_id"
                                     required
                                 >
@@ -405,29 +405,29 @@
                                     {{ errors.get("account_id", "Select an account.") }}
                                 </div>
                                 {% if not accounts %}
-                                    <div class="form-text text-danger">Add an account before recording income.</div>
+                                    <div class="form-text text-danger">Add an account before recording an expense.</div>
                                 {% endif %}
                             </div>
                             <div class="col-sm-6">
-                                <label class="form-label fw-medium" for="income-date">Date</label>
+                                <label class="form-label fw-medium" for="expense-date">Date</label>
                                 <input
                                     class="form-control {% if errors.get('date') %}is-invalid{% endif %}"
-                                    id="income-date"
+                                    id="expense-date"
                                     name="date"
                                     type="date"
                                     value="{{ form_data['date'] }}"
                                     required
                                 >
                                 <div class="invalid-feedback">
-                                    {{ errors.get("date", "Select a valid income date.") }}
+                                    {{ errors.get("date", "Select a valid date.") }}
                                 </div>
                             </div>
                         </div>
                     </div>
                     <div class="modal-footer border-0 px-4 pt-2 pb-4">
                         <button class="btn btn-light px-4" type="button" data-bs-dismiss="modal">Cancel</button>
-                        <button class="btn btn-primary px-4" type="submit" {% if not accounts %}disabled{% endif %}>
-                            Add income
+                        <button class="btn btn-danger px-4" type="submit" {% if not accounts %}disabled{% endif %}>
+                            Add expense
                         </button>
                     </div>
                 </form>
@@ -435,13 +435,13 @@
         </div>
     </div>
 
-    <div class="modal fade" id="recurringIncomeModal" tabindex="-1" aria-labelledby="recurringIncomeModalLabel" aria-hidden="true">
+    <div class="modal fade" id="recurringExpenseModal" tabindex="-1" aria-labelledby="recurringExpenseModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-lg">
-            <div class="modal-content income-modal-content">
+            <div class="modal-content income-modal-content expense-modal-content">
                 <div class="modal-header border-0 px-4 pt-4 pb-2">
                     <div>
-                        <h2 class="modal-title h4 fw-bold" id="recurringIncomeModalLabel">Set up recurring income</h2>
-                        <p class="text-secondary small mb-0">Create a schedule for income you receive regularly.</p>
+                        <h2 class="modal-title h4 fw-bold" id="recurringExpenseModalLabel">Set up recurring expense</h2>
+                        <p class="text-secondary small mb-0">Create a schedule for expenses you pay regularly.</p>
                     </div>
                     <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
@@ -457,19 +457,19 @@
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label fw-medium" for="recurring-category">Category</label>
-                                <input class="form-control" id="recurring-category" type="text" list="income-category-options" placeholder="Choose or enter a category" autocomplete="off" required>
+                                <input class="form-control" id="recurring-category" type="text" list="expense-category-options" placeholder="Choose or enter a category" autocomplete="off" required>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label fw-medium" for="recurring-description">Description</label>
-                                <input class="form-control" id="recurring-description" type="text" placeholder="For example, paycheck" autocomplete="off" required>
+                                <input class="form-control" id="recurring-description" type="text" placeholder="For example, rent" autocomplete="off" required>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label fw-medium" for="recurring-account">Account</label>
                                 <select class="form-select" id="recurring-account" required>
                                     <option value="" selected disabled>Select account</option>
-                                    <option>Main Checking</option>
-                                    <option>Savings</option>
-                                    <option>Cash</option>
+                                    {% for account in accounts %}
+                                        <option value="{{ account['id'] }}">{{ account["name"] }}</option>
+                                    {% endfor %}
                                 </select>
                             </div>
                             <div class="col-12">
@@ -510,7 +510,7 @@
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label fw-medium" for="recurring-start-date">Start date</label>
-                                <input class="form-control" id="recurring-start-date" type="date" value="2026-08-21" required>
+                                <input class="form-control" id="recurring-start-date" type="date" value="{{ form_data['date'] }}" required>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label fw-medium" for="recurring-end-date">End date <span class="text-secondary fw-normal">(optional)</span></label>
@@ -520,7 +520,7 @@
                     </div>
                     <div class="modal-footer border-0 px-4 pt-2 pb-4">
                         <button class="btn btn-light px-4" type="button" data-bs-dismiss="modal">Cancel</button>
-                        <button class="btn btn-primary px-4" type="submit">Set up income</button>
+                        <button class="btn btn-danger px-4" type="submit">Set up expense</button>
                     </div>
                 </form>
             </div>

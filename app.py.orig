@@ -1,25 +1,14 @@
 import re
 
 from cs50 import SQL
-from flask import Flask, flash, redirect, render_template, request, session
+from flask import Flask, flash, redirect, render_template, request, session, make_response
 from flask_session import Session
-from werkzeug.middleware.proxy_fix import ProxyFix
 from werkzeug.security import check_password_hash, generate_password_hash
 
-from helpers import login_required, transaction_page, usd
+import helpers
 
 # Configure application
 app = Flask(__name__)
-
-# Trust the public hostname and HTTPS scheme supplied by one Dev Tunnel proxy.
-app.wsgi_app = ProxyFix(
-    app.wsgi_app,
-    x_proto=1,
-    x_host=1
-)
-
-# Custom filter
-app.jinja_env.filters["usd"] = usd
 
 # Configure session to use filesystem (instead of signed cookies)
 app.config["SESSION_PERMANENT"] = False
@@ -27,7 +16,7 @@ app.config["SESSION_TYPE"] = "filesystem"
 Session(app)
 
 # Configure CS50 Library to use SQLite database
-db = SQL("sqlite:///budget.db")
+db = SQL("sqlite:///Budget.db")
 
 @app.route("/")
 def index():
@@ -153,21 +142,9 @@ def logout():
     session.clear()
     return redirect("/")
 
-@app.route("/income", defaults={"limit": "10"}, methods=["GET", "POST"])
-@app.route("/income/<limit>", methods=["GET", "POST"])
-@login_required
-def income(limit):
-    # Plug the Income route into the shared transaction-page backend.
-    return transaction_page(db, "income", limit)
-
-
-@app.route("/expenses", defaults={"limit": "10"}, methods=["GET", "POST"])
-@app.route("/expenses/<limit>", methods=["GET", "POST"])
-@login_required
-def expenses(limit):
-    # Plug the Expenses route into the same backend with its own table and UI.
-    return transaction_page(db, "expenses", limit)
-
+@app.route("/income")
+def income():
+    return render_template("income.html")
 
 @app.route("/accounts", methods=["GET", "POST"])
 def accounts():
@@ -180,9 +157,21 @@ def accounts():
     account_type = (request.form.get("account_type") or "").strip()
     bank = (request.form.get("bank") or "").strip() or None
 
-    # Require the name field as the type will be inforced later and the bank is optional
-    if not name:
-        flash("Account name is required.", "danger")
+    # Match the form's credit-card value to the database's credit card value.
+    if account_type == "credit-card":
+        account_type = "credit card"
+
+    # Require an account name and a supported account type. Bank is optional.
+    allowed_types = {
+        "checking",
+        "savings",
+        "cash",
+        "credit card",
+        "investment",
+        "other"
+    }
+    if not name or account_type not in allowed_types:
+        flash("Account name and account type are required.", "danger")
         return redirect("/accounts")
 
     # Store the account under the currently signed-in user.
