@@ -36,7 +36,6 @@ body {
 .brand {
     display: inline-flex;
     align-items: center;
-    gap: 10px;
 
     padding: 8px 14px;
 
@@ -44,31 +43,6 @@ body {
     font-weight: 750;
     letter-spacing: -0.8px;
 
-    border-radius: 12px;
-
-    transition:
-        transform 0.2s ease,
-        opacity 0.2s ease;
-}
-
-.brand-icon {
-    width: 34px;
-    height: 34px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    flex: 0 0 34px;
-
-    color: #ffffff;
-    background: linear-gradient(135deg, #2563eb, #7c3aed);
-    border-radius: 10px;
-    box-shadow: 0 5px 14px rgba(79, 70, 229, 0.25);
-
-    font-size: 1rem;
-    letter-spacing: 0;
-}
-
-.brand-name {
     background: linear-gradient(
         135deg,
         #2563eb,
@@ -80,15 +54,17 @@ body {
 
     color: transparent;
     -webkit-text-fill-color: transparent;
+
+    border-radius: 12px;
+
+    transition:
+        transform 0.2s ease,
+        opacity 0.2s ease;
 }
 
 .brand:hover {
+    transform: translateY(-1px);
     opacity: 0.85;
-}
-
-#title-li.brand:hover,
-#title-lo.brand:hover {
-    transform: translateX(-50%) translateY(-1px);
 }
 
 
