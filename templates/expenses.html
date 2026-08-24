@@ -16,14 +16,14 @@
 
             <div class="d-flex flex-column flex-sm-row align-items-sm-center justify-content-between gap-3 mb-4">
                 <div>
-                    <p class="income-eyebrow expense-eyebrow mb-1">Money out</p>
+                    <p class="income-eyebrow mb-1">Money out</p>
                     <h1 class="h2 fw-bold mb-1">Expenses</h1>
                     <p class="text-secondary mb-0">Track every purchase and see where your money goes.</p>
                 </div>
 
                 <div class="btn-group income-add-group align-self-start align-self-sm-center">
                     <button
-                        class="btn btn-danger px-4"
+                        class="btn btn-primary px-4"
                         type="button"
                         data-bs-toggle="modal"
                         data-bs-target="#addTransactionModal"
@@ -31,7 +31,7 @@
                         <span class="me-1" aria-hidden="true">+</span> Add Expense
                     </button>
                     <button
-                        class="btn btn-danger dropdown-toggle dropdown-toggle-split"
+                        class="btn btn-primary dropdown-toggle dropdown-toggle-split"
                         type="button"
                         data-bs-toggle="dropdown"
                         aria-expanded="false"
@@ -63,7 +63,7 @@
                 </div>
             </div>
 
-            <div class="card income-summary-card expense-summary-card border-0 mb-4">
+            <div class="card income-summary-card border-0 mb-4">
                 <div class="card-body p-4">
                     <div class="row align-items-center g-4">
                         <div class="col-sm-7">
@@ -134,7 +134,7 @@
                                 <button class="btn btn-outline-secondary w-100 dropdown-toggle" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
                                     Category
                                     <span
-                                        class="badge rounded-pill text-bg-danger ms-1 {% if not filters['categories'] %}d-none{% endif %}"
+                                        class="badge rounded-pill text-bg-primary ms-1 {% if not filters['categories'] %}d-none{% endif %}"
                                         id="category-filter-count"
                                     >
                                         {{ filters["categories"] | length }}
@@ -166,7 +166,7 @@
                                 <button class="btn btn-outline-secondary w-100 dropdown-toggle" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
                                     Account
                                     <span
-                                        class="badge rounded-pill text-bg-danger ms-1 {% if not filters['accounts'] %}d-none{% endif %}"
+                                        class="badge rounded-pill text-bg-primary ms-1 {% if not filters['accounts'] %}d-none{% endif %}"
                                         id="account-filter-count"
                                     >
                                         {{ filters["accounts"] | length }}
@@ -271,7 +271,7 @@
                                     <tr>
                                         <td><span class="text-nowrap">{{ entry["display_date"] }}</span></td>
                                         <td><span class="fw-semibold">{{ entry["description"] or "" }}</span></td>
-                                        <td><span class="income-category expense-category">{{ entry["category"] }}</span></td>
+                                        <td><span class="income-category">{{ entry["category"] }}</span></td>
                                         <td>{{ entry["account"] }}</td>
                                         <td class="income-amount-column fw-semibold text-danger">{{ entry["amount"] | usd }}</td>
                                     </tr>
@@ -288,7 +288,7 @@
 
                     <div class="text-center p-4 border-top" id="transaction-pagination">
                         {% if next_page_url %}
-                            <a class="btn btn-outline-danger px-4" href="{{ next_page_url }}">
+                            <a class="btn btn-outline-primary px-4" href="{{ next_page_url }}">
                                 {{ "Load all" if current_limit == 50 else "Load more" }}
                             </a>
                         {% elif showing_all and entries %}
@@ -426,7 +426,7 @@
                     </div>
                     <div class="modal-footer border-0 px-4 pt-2 pb-4">
                         <button class="btn btn-light px-4" type="button" data-bs-dismiss="modal">Cancel</button>
-                        <button class="btn btn-danger px-4" type="submit" {% if not accounts %}disabled{% endif %}>
+                        <button class="btn btn-primary px-4" type="submit" {% if not accounts %}disabled{% endif %}>
                             Add expense
                         </button>
                     </div>
@@ -520,7 +520,7 @@
                     </div>
                     <div class="modal-footer border-0 px-4 pt-2 pb-4">
                         <button class="btn btn-light px-4" type="button" data-bs-dismiss="modal">Cancel</button>
-                        <button class="btn btn-danger px-4" type="submit">Set up expense</button>
+                        <button class="btn btn-primary px-4" type="submit">Set up expense</button>
                     </div>
                 </form>
             </div>
