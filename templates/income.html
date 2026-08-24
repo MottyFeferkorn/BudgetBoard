@@ -7,6 +7,13 @@
 {% block main %}
     <section class="income-page py-4 py-lg-5">
         <div class="container-xl">
+            {% if request.args.get("added") == "1" %}
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    Income added successfully.
+                    <button class="btn-close" type="button" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endif %}
+
             <div class="d-flex flex-column flex-sm-row align-items-sm-center justify-content-between gap-3 mb-4">
                 <div>
                     <p class="income-eyebrow mb-1">Money in</p>
@@ -64,15 +71,17 @@
                                 <div class="income-summary-icon" aria-hidden="true">$</div>
                                 <div>
                                     <p class="text-secondary small mb-1">This month's total income</p>
-                                    <p class="display-6 fw-bold mb-0">$6,845.20</p>
+                                    <p class="display-6 fw-bold mb-0">{{ summary["total"] | usd }}</p>
                                 </div>
                             </div>
                         </div>
                         <div class="col-sm-5">
                             <div class="income-summary-detail ps-sm-4">
                                 <p class="text-secondary small mb-1">Income received</p>
-                                <p class="h5 fw-semibold mb-1">10 payments</p>
-                                <p class="small text-success mb-0">↑ 8.4% from last month</p>
+                                <p class="h5 fw-semibold mb-0">
+                                    {{ summary["count"] }}
+                                    {{ "payment" if summary["count"] == 1 else "payments" }}
+                                </p>
                             </div>
                         </div>
                     </div>
@@ -188,82 +197,31 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr>
-                                    <td><span class="text-nowrap">Aug 20, 2026</span></td>
-                                    <td><span class="fw-semibold">Acme Studio paycheck</span></td>
-                                    <td><span class="income-category income-category-salary">Salary</span></td>
-                                    <td>Main Checking</td>
-                                    <td class="text-end fw-semibold text-success">+$3,250.00</td>
-                                </tr>
-                                <tr>
-                                    <td><span class="text-nowrap">Aug 18, 2026</span></td>
-                                    <td><span class="fw-semibold">Website design project</span></td>
-                                    <td><span class="income-category income-category-freelance">Freelance</span></td>
-                                    <td>Main Checking</td>
-                                    <td class="text-end fw-semibold text-success">+$850.00</td>
-                                </tr>
-                                <tr>
-                                    <td><span class="text-nowrap">Aug 15, 2026</span></td>
-                                    <td><span class="fw-semibold">Savings interest</span></td>
-                                    <td><span class="income-category income-category-interest">Interest</span></td>
-                                    <td>Savings</td>
-                                    <td class="text-end fw-semibold text-success">+$42.18</td>
-                                </tr>
-                                <tr>
-                                    <td><span class="text-nowrap">Aug 13, 2026</span></td>
-                                    <td><span class="fw-semibold">Marketplace sale</span></td>
-                                    <td><span class="income-category income-category-other">Other</span></td>
-                                    <td>Cash</td>
-                                    <td class="text-end fw-semibold text-success">+$125.00</td>
-                                </tr>
-                                <tr>
-                                    <td><span class="text-nowrap">Aug 11, 2026</span></td>
-                                    <td><span class="fw-semibold">Photography session</span></td>
-                                    <td><span class="income-category income-category-freelance">Freelance</span></td>
-                                    <td>Main Checking</td>
-                                    <td class="text-end fw-semibold text-success">+$475.00</td>
-                                </tr>
-                                <tr>
-                                    <td><span class="text-nowrap">Aug 7, 2026</span></td>
-                                    <td><span class="fw-semibold">Expense reimbursement</span></td>
-                                    <td><span class="income-category income-category-other">Other</span></td>
-                                    <td>Main Checking</td>
-                                    <td class="text-end fw-semibold text-success">+$168.02</td>
-                                </tr>
-                                <tr>
-                                    <td><span class="text-nowrap">Aug 6, 2026</span></td>
-                                    <td><span class="fw-semibold">Dividend payment</span></td>
-                                    <td><span class="income-category income-category-interest">Investment</span></td>
-                                    <td>Savings</td>
-                                    <td class="text-end fw-semibold text-success">+$96.00</td>
-                                </tr>
-                                <tr>
-                                    <td><span class="text-nowrap">Aug 5, 2026</span></td>
-                                    <td><span class="fw-semibold">Consulting retainer</span></td>
-                                    <td><span class="income-category income-category-freelance">Freelance</span></td>
-                                    <td>Main Checking</td>
-                                    <td class="text-end fw-semibold text-success">+$625.00</td>
-                                </tr>
-                                <tr>
-                                    <td><span class="text-nowrap">Aug 3, 2026</span></td>
-                                    <td><span class="fw-semibold">Course royalty</span></td>
-                                    <td><span class="income-category income-category-other">Royalties</span></td>
-                                    <td>Savings</td>
-                                    <td class="text-end fw-semibold text-success">+$289.00</td>
-                                </tr>
-                                <tr>
-                                    <td><span class="text-nowrap">Aug 1, 2026</span></td>
-                                    <td><span class="fw-semibold">Acme Studio paycheck</span></td>
-                                    <td><span class="income-category income-category-salary">Salary</span></td>
-                                    <td>Main Checking</td>
-                                    <td class="text-end fw-semibold text-success">+$925.00</td>
-                                </tr>
+                                {% for entry in entries %}
+                                    <tr>
+                                        <td><span class="text-nowrap">{{ entry["display_date"] }}</span></td>
+                                        <td><span class="fw-semibold">{{ entry["description"] or "" }}</span></td>
+                                        <td><span class="income-category">{{ entry["category"] }}</span></td>
+                                        <td>{{ entry["account"] }}</td>
+                                        <td class="text-end fw-semibold text-success">{{ entry["amount"] | usd }}</td>
+                                    </tr>
+                                {% else %}
+                                    <tr>
+                                        <td class="text-center text-secondary py-5" colspan="5">
+                                            No income has been recorded yet.
+                                        </td>
+                                    </tr>
+                                {% endfor %}
                             </tbody>
                         </table>
                     </div>
 
                     <div class="text-center p-4 border-top">
-                        <button class="btn btn-outline-primary px-4" type="button">Load more</button>
+                        {% if next_limit %}
+                            <a class="btn btn-outline-primary px-4" href="{{ url_for('income', limit=next_limit) }}">
+                                Load more
+                            </a>
+                        {% endif %}
                     </div>
                 </div>
             </div>
@@ -280,55 +238,125 @@
                     </div>
                     <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <form>
+                <form
+                    id="add-income-form"
+                    action="{{ url_for('income', limit=current_limit) }}"
+                    method="post"
+                    data-has-errors="{{ 'true' if errors else 'false' }}"
+                    novalidate
+                >
                     <div class="modal-body px-4 py-3">
                         <div class="mb-3">
                             <label class="form-label fw-medium" for="income-amount">Amount</label>
-                            <div class="input-group">
+                            <div class="input-group has-validation">
                                 <span class="input-group-text">$</span>
-                                <input class="form-control" id="income-amount" type="number" min="0" step="0.01" placeholder="0.00" required>
+                                <input
+                                    class="form-control {% if errors.get('amount') %}is-invalid{% endif %}"
+                                    id="income-amount"
+                                    name="amount"
+                                    type="number"
+                                    min="0.01"
+                                    step="0.01"
+                                    value="{{ form_data['amount'] }}"
+                                    placeholder="0.00"
+                                    required
+                                    autofocus
+                                >
+                                <div class="invalid-feedback">
+                                    {{ errors.get("amount", "Enter an amount greater than zero.") }}
+                                </div>
                             </div>
                         </div>
                         <div class="mb-3">
                             <label class="form-label fw-medium" for="income-category">Category</label>
-                            <input class="form-control" id="income-category" type="text" list="income-category-options" placeholder="Choose or enter a category" autocomplete="off" required>
+                            <input
+                                class="form-control {% if errors.get('category') %}is-invalid{% endif %}"
+                                id="income-category"
+                                name="category"
+                                type="text"
+                                list="income-category-options"
+                                maxlength="50"
+                                value="{{ form_data['category'] }}"
+                                placeholder="Choose or enter a category"
+                                autocomplete="off"
+                                required
+                            >
                             <datalist id="income-category-options">
-                                <option value="Salary"></option>
-                                <option value="Freelance"></option>
-                                <option value="Interest"></option>
-                                <option value="Investment"></option>
+                                {% for category in categories %}
+                                    <option value="{{ category['name'] }}"></option>
+                                {% endfor %}
                             </datalist>
-                            <div class="form-text">Previous categories will appear here as suggestions.</div>
+                            <div class="invalid-feedback">
+                                {{ errors.get("category", "Enter an income category.") }}
+                            </div>
+                            <div class="form-text">Previous categories appear as suggestions.</div>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label fw-medium" for="income-description">Description</label>
-                            <input class="form-control" id="income-description" type="text" list="income-description-options" placeholder="For example, August paycheck" autocomplete="off" required>
-                            <datalist id="income-description-options">
-                                <option value="Acme Studio paycheck"></option>
-                                <option value="Website design project"></option>
-                                <option value="Savings interest"></option>
-                            </datalist>
-                            <div class="form-text">Previous descriptions can be suggested as you type.</div>
+                            <label class="form-label fw-medium" for="income-description">
+                                Description <span class="text-secondary fw-normal">(optional)</span>
+                            </label>
+                            <input
+                                class="form-control {% if errors.get('description') %}is-invalid{% endif %}"
+                                id="income-description"
+                                name="description"
+                                type="text"
+                                maxlength="150"
+                                value="{{ form_data['description'] }}"
+                                placeholder="For example, August paycheck"
+                            >
+                            <div class="invalid-feedback">
+                                {{ errors.get("description", "Description must be 150 characters or fewer.") }}
+                            </div>
                         </div>
                         <div class="row g-3">
                             <div class="col-sm-6">
                                 <label class="form-label fw-medium" for="income-account">Account</label>
-                                <select class="form-select" id="income-account" required>
-                                    <option value="" selected disabled>Select account</option>
-                                    <option>Main Checking</option>
-                                    <option>Savings</option>
-                                    <option>Cash</option>
+                                <select
+                                    class="form-select {% if errors.get('account_id') %}is-invalid{% endif %}"
+                                    id="income-account"
+                                    name="account_id"
+                                    required
+                                >
+                                    <option value="" disabled {% if not form_data['account_id'] %}selected{% endif %}>
+                                        Select account
+                                    </option>
+                                    {% for account in accounts %}
+                                        <option
+                                            value="{{ account['id'] }}"
+                                            {% if form_data['account_id'] == account['id'] | string %}selected{% endif %}
+                                        >
+                                            {{ account["name"] }}
+                                        </option>
+                                    {% endfor %}
                                 </select>
+                                <div class="invalid-feedback">
+                                    {{ errors.get("account_id", "Select an account.") }}
+                                </div>
+                                {% if not accounts %}
+                                    <div class="form-text text-danger">Add an account before recording income.</div>
+                                {% endif %}
                             </div>
                             <div class="col-sm-6">
                                 <label class="form-label fw-medium" for="income-date">Date</label>
-                                <input class="form-control" id="income-date" type="date" value="2026-08-21" required>
+                                <input
+                                    class="form-control {% if errors.get('date') %}is-invalid{% endif %}"
+                                    id="income-date"
+                                    name="date"
+                                    type="date"
+                                    value="{{ form_data['date'] }}"
+                                    required
+                                >
+                                <div class="invalid-feedback">
+                                    {{ errors.get("date", "Select a valid income date.") }}
+                                </div>
                             </div>
                         </div>
                     </div>
                     <div class="modal-footer border-0 px-4 pt-2 pb-4">
                         <button class="btn btn-light px-4" type="button" data-bs-dismiss="modal">Cancel</button>
-                        <button class="btn btn-primary px-4" type="submit">Add income</button>
+                        <button class="btn btn-primary px-4" type="submit" {% if not accounts %}disabled{% endif %}>
+                            Add income
+                        </button>
                     </div>
                 </form>
             </div>
@@ -361,7 +389,7 @@
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label fw-medium" for="recurring-description">Description</label>
-                                <input class="form-control" id="recurring-description" type="text" list="income-description-options" placeholder="For example, paycheck" autocomplete="off" required>
+                                <input class="form-control" id="recurring-description" type="text" placeholder="For example, paycheck" autocomplete="off" required>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label fw-medium" for="recurring-account">Account</label>
@@ -426,4 +454,8 @@
             </div>
         </div>
     </div>
+{% endblock %}
+
+{% block scripts %}
+    <script src="{{ url_for('static', filename='income.js') }}"></script>
 {% endblock %}
