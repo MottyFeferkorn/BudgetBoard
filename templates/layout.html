@@ -54,7 +54,10 @@
 
                     <!-- Logo -->
                     <a href="/" class="brand text-decoration-none" id="{% if session.get('user_id') %}title-li{% else %}title-lo{% endif %}">
-                        BudgetBoard
+                        <span class="brand-icon" aria-hidden="true">
+                            <i class="bi bi-pie-chart-fill"></i>
+                        </span>
+                        <span class="brand-name">BudgetBoard</span>
                     </a>
 
                 </div>
