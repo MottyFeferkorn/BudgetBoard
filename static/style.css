@@ -499,6 +499,23 @@ main {
     border-radius: 0.85rem;
 }
 
+.income-table {
+    min-width: 760px;
+    table-layout: fixed;
+}
+
+.income-table .income-col-standard {
+    width: 17%;
+}
+
+.income-table .income-col-description {
+    width: 29%;
+}
+
+.income-table .income-col-account {
+    width: 20%;
+}
+
 .income-table thead th {
     padding: 0.9rem 1.25rem;
     border-bottom-color: #e9ecef;
@@ -526,7 +543,6 @@ main {
 }
 
 .income-table .income-amount-column {
-    width: 11rem;
     text-align: center;
     white-space: nowrap;
 }
