@@ -1,0 +1,303 @@
+.settings-page {
+    min-height: calc(100vh - 72px);
+    background-color: #f8f9fa;
+}
+
+.settings-nav-card,
+.settings-card {
+    border-radius: 1rem;
+    background-color: #fff;
+    box-shadow: 0 0.5rem 1.75rem rgba(33, 37, 41, 0.06);
+}
+
+.settings-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.settings-nav-link {
+    display: flex;
+    min-height: 3rem;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 0.9rem;
+    border-radius: 0.75rem;
+    color: #6c757d;
+    cursor: pointer;
+    font-size: 0.92rem;
+    font-weight: 600;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.settings-nav-link i {
+    width: 1.15rem;
+    font-size: 1rem;
+}
+
+.settings-nav-link:hover {
+    background-color: #f8f9fa;
+    color: #212529;
+}
+
+#settings-account-section:checked ~ .settings-sidebar label[for="settings-account-section"],
+#settings-categories-section:checked ~ .settings-sidebar label[for="settings-categories-section"] {
+    background-color: rgba(13, 110, 253, 0.1);
+    color: #0d6efd;
+}
+
+#settings-account-section:focus-visible ~ .settings-sidebar label[for="settings-account-section"],
+#settings-categories-section:focus-visible ~ .settings-sidebar label[for="settings-categories-section"] {
+    outline: 0.2rem solid rgba(13, 110, 253, 0.25);
+    outline-offset: 0.1rem;
+}
+
+.settings-account-panel,
+.settings-categories-panel,
+.settings-category-pane {
+    display: none;
+}
+
+#settings-account-section:checked ~ .settings-content .settings-account-panel,
+#settings-categories-section:checked ~ .settings-content .settings-categories-panel,
+#income-categories:checked ~ .settings-category-panels .income-category-pane,
+#expense-categories:checked ~ .settings-category-panels .expense-category-pane {
+    display: block;
+}
+
+.settings-icon-button,
+.settings-category-edit-button,
+.settings-category-delete-button {
+    display: grid;
+    width: 2.65rem;
+    height: 2.65rem;
+    flex: 0 0 2.65rem;
+    padding: 0;
+    place-items: center;
+    border-radius: 0.7rem;
+}
+
+.settings-icon-button,
+.settings-category-edit-button {
+    color: #6c757d;
+}
+
+.settings-icon-button:hover,
+.settings-icon-button:focus,
+.settings-category-edit-button:hover,
+.settings-category-edit-button:focus {
+    background-color: #f1f3f5;
+    color: #0d6efd;
+}
+
+.account-details {
+    overflow: hidden;
+    border: 1px solid #edf0f2;
+    border-radius: 0.9rem;
+    background-color: #fbfcfd;
+}
+
+.account-detail {
+    padding: 1rem 1.1rem;
+}
+
+.account-detail + .account-detail {
+    border-left: 1px solid #edf0f2;
+}
+
+.account-detail dt {
+    margin-bottom: 0.3rem;
+    color: #6c757d;
+    font-size: 0.78rem;
+    font-weight: 600;
+}
+
+.account-detail dd {
+    margin-bottom: 0;
+    color: #343a40;
+    font-weight: 600;
+}
+
+.settings-divider {
+    margin: 2rem 0;
+    border-color: #e9ecef;
+    opacity: 1;
+}
+
+.settings-form-control,
+.settings-category-input {
+    min-height: 2.75rem;
+    border-color: #dee2e6;
+    border-radius: 0.7rem;
+}
+
+.settings-form-control:focus,
+.settings-category-input:focus {
+    border-color: rgba(13, 110, 253, 0.55);
+    box-shadow: 0 0 0 0.18rem rgba(13, 110, 253, 0.1);
+}
+
+.settings-button,
+.settings-row-button,
+.settings-add-category {
+    min-height: 2.65rem;
+    border-radius: 0.7rem;
+    font-weight: 600;
+}
+
+.settings-category-tabs {
+    width: min(100%, 22rem);
+    padding: 0.3rem;
+    border: 1px solid #e9ecef;
+    border-radius: 0.85rem;
+    background-color: #f8f9fa;
+}
+
+.settings-category-tabs .btn {
+    flex: 1 1 0;
+    border: 0;
+    border-radius: 0.6rem !important;
+    color: #6c757d;
+    font-weight: 600;
+}
+
+.settings-category-tabs .btn:hover {
+    color: #212529;
+}
+
+#income-categories:checked ~ .settings-category-tabs label[for="income-categories"],
+#expense-categories:checked ~ .settings-category-tabs label[for="expense-categories"] {
+    background-color: #0d6efd;
+    color: #fff;
+    box-shadow: 0 0.3rem 0.7rem rgba(13, 110, 253, 0.18);
+}
+
+#income-categories:focus-visible ~ .settings-category-tabs label[for="income-categories"],
+#expense-categories:focus-visible ~ .settings-category-tabs label[for="expense-categories"] {
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+
+.settings-category-list {
+    overflow: hidden;
+    border: 1px solid #edf0f2;
+    border-radius: 1rem;
+    background-color: #fff;
+}
+
+.settings-category-row {
+    display: flex;
+    min-height: 4.5rem;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.85rem 1.25rem;
+    border-bottom: 1px solid #edf0f2;
+    transition: background-color 0.15s ease;
+}
+
+.settings-category-row:hover {
+    background-color: #fbfcfd;
+}
+
+.settings-category-name,
+.settings-category-input {
+    min-width: 0;
+    font-weight: 600;
+}
+
+.settings-category-edit-button {
+    opacity: 0.72;
+    transition: background-color 0.15s ease, color 0.15s ease, opacity 0.15s ease;
+}
+
+.settings-category-row:hover .settings-category-edit-button,
+.settings-category-edit-button:focus-visible {
+    opacity: 1;
+}
+
+.settings-category-row-editing {
+    display: grid;
+    grid-template-columns: auto minmax(8rem, 1fr) auto;
+    background-color: #fbfcfd;
+}
+
+.settings-category-edit-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.settings-row-button {
+    padding-right: 1rem;
+    padding-left: 1rem;
+}
+
+.settings-category-delete-button {
+    color: #dc3545;
+}
+
+.settings-category-delete-button:hover,
+.settings-category-delete-button:focus {
+    background-color: #fff1f2;
+    color: #b02a37;
+}
+
+.settings-category-footer {
+    padding: 1rem 1.25rem;
+    background-color: #fbfcfd;
+}
+
+@media (max-width: 767.98px) {
+    .settings-nav {
+        flex-direction: row;
+        overflow-x: auto;
+    }
+
+    .settings-nav-link {
+        flex: 1 1 0;
+        justify-content: center;
+        white-space: nowrap;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .settings-page {
+        padding-right: 0.25rem;
+        padding-left: 0.25rem;
+    }
+
+    .settings-nav {
+        flex-direction: column;
+        overflow: visible;
+    }
+
+    .settings-nav-link {
+        justify-content: flex-start;
+    }
+
+    .account-detail + .account-detail {
+        border-top: 1px solid #edf0f2;
+        border-left: 0;
+    }
+
+    .settings-category-tabs {
+        width: 100%;
+    }
+
+    .settings-category-row {
+        padding: 0.85rem 1rem;
+    }
+
+    .settings-category-row-editing {
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 0.65rem;
+    }
+
+    .settings-category-edit-actions {
+        grid-column: 1 / -1;
+    }
+
+    .settings-row-button {
+        flex: 1 1 0;
+    }
+}

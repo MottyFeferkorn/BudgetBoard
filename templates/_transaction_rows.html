@@ -1,0 +1,208 @@
+{% macro transaction_rows(entries, accounts, transaction_page_url, amount_class, empty_message, category_list_id) %}
+    {% for entry in entries %}
+        {% set editor_target = '.transaction-item-' ~ entry['id'] %}
+        {% set editor_id = 'transaction-edit-form-' ~ entry['id'] %}
+        {% set delete_modal_id = 'deleteTransactionModal-' ~ entry['id'] %}
+        <tr class="transaction-row">
+            <td>
+                <form id="{{ editor_id }}" action="{{ transaction_page_url }}" method="post">
+                    <input name="action" type="hidden" value="update_transaction">
+                    <input name="transaction_id" type="hidden" value="{{ entry['id'] }}">
+                </form>
+
+                <div class="collapse show {{ editor_target[1:] }}">
+                    <span class="text-nowrap">{{ entry["display_date"] }}</span>
+                </div>
+                <div class="collapse {{ editor_target[1:] }}">
+                    <div class="d-flex align-items-center gap-2">
+                        <button
+                            class="btn btn-sm btn-link text-danger transaction-delete-trigger p-1"
+                            type="button"
+                            data-bs-toggle="modal"
+                            data-bs-target="#{{ delete_modal_id }}"
+                            aria-label="Delete transaction"
+                            title="Delete transaction"
+                        >
+                            <i class="bi bi-trash3" aria-hidden="true"></i>
+                        </button>
+                        <input
+                            class="form-control form-control-sm transaction-edit-input"
+                            form="{{ editor_id }}"
+                            name="date"
+                            type="date"
+                            value="{{ entry['raw_date'] }}"
+                            aria-label="Transaction date"
+                            required
+                        >
+                    </div>
+                </div>
+            </td>
+            <td>
+                <div class="collapse show {{ editor_target[1:] }}">
+                    <span class="fw-semibold">{{ entry["description"] or "—" }}</span>
+                </div>
+                <div class="collapse {{ editor_target[1:] }}">
+                    <input
+                        class="form-control form-control-sm transaction-edit-input"
+                        form="{{ editor_id }}"
+                        name="description"
+                        type="text"
+                        maxlength="150"
+                        value="{{ entry['description'] or '' }}"
+                        placeholder="Optional description"
+                        aria-label="Transaction description"
+                    >
+                </div>
+            </td>
+            <td>
+                <div class="collapse show {{ editor_target[1:] }}">
+                    <span class="income-category">{{ entry["category"] }}</span>
+                </div>
+                <div class="collapse {{ editor_target[1:] }}">
+                    <input
+                        class="form-control form-control-sm transaction-edit-input"
+                        form="{{ editor_id }}"
+                        name="category"
+                        type="text"
+                        list="{{ category_list_id }}"
+                        maxlength="50"
+                        value="{{ entry['category'] }}"
+                        placeholder="Category"
+                        autocomplete="off"
+                        aria-label="Transaction category"
+                        required
+                    >
+                </div>
+            </td>
+            <td>
+                <div class="collapse show {{ editor_target[1:] }}">
+                    {{ entry["account"] }}
+                </div>
+                <div class="collapse {{ editor_target[1:] }}">
+                    <select
+                        class="form-select form-select-sm transaction-edit-input"
+                        form="{{ editor_id }}"
+                        name="account_id"
+                        aria-label="Transaction account"
+                        required
+                    >
+                        {% for account in accounts %}
+                            <option
+                                value="{{ account['id'] }}"
+                                {% if account['id'] == entry['account_id'] %}selected{% endif %}
+                            >
+                                {{ account["name"] }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </td>
+            <td class="income-amount-column fw-semibold {{ amount_class }}">
+                <div class="collapse show {{ editor_target[1:] }}">
+                    {{ entry["amount"] | usd }}
+                </div>
+                <div class="collapse {{ editor_target[1:] }}">
+                    <div class="input-group input-group-sm transaction-amount-input">
+                        <span class="input-group-text">$</span>
+                        <input
+                            class="form-control transaction-edit-input"
+                            form="{{ editor_id }}"
+                            name="amount"
+                            type="number"
+                            min="0.01"
+                            step="0.01"
+                            value="{{ '%.2f' | format(entry['amount']) }}"
+                            aria-label="Transaction amount"
+                            required
+                        >
+                    </div>
+                </div>
+            </td>
+            <td class="transaction-action-column">
+                <div class="collapse show {{ editor_target[1:] }}">
+                    <button
+                        class="btn btn-sm btn-link text-secondary transaction-edit-trigger p-1"
+                        type="button"
+                        data-bs-toggle="collapse"
+                        data-bs-target="{{ editor_target }}"
+                        aria-expanded="false"
+                        aria-label="Edit transaction"
+                        title="Edit transaction"
+                    >
+                        <i class="bi bi-pencil" aria-hidden="true"></i>
+                    </button>
+                </div>
+                <div class="collapse {{ editor_target[1:] }}">
+                    <div class="d-flex justify-content-end gap-2">
+                        <button
+                            class="btn btn-sm btn-outline-secondary"
+                            form="{{ editor_id }}"
+                            type="reset"
+                            data-bs-toggle="collapse"
+                            data-bs-target="{{ editor_target }}"
+                            aria-expanded="true"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            class="btn btn-sm btn-primary"
+                            form="{{ editor_id }}"
+                            type="submit"
+                        >
+                            Save
+                        </button>
+                    </div>
+                </div>
+
+                <div
+                    class="modal fade"
+                    id="{{ delete_modal_id }}"
+                    tabindex="-1"
+                    aria-labelledby="{{ delete_modal_id }}Label"
+                    aria-hidden="true"
+                >
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content income-modal-content">
+                            <div class="modal-header border-0 px-4 pt-4 pb-2">
+                                <div>
+                                    <h2 class="modal-title h5 fw-bold" id="{{ delete_modal_id }}Label">
+                                        Delete transaction?
+                                    </h2>
+                                    <p class="text-secondary small mb-0">
+                                        This removes the transaction. Its category will remain available.
+                                    </p>
+                                </div>
+                                <button
+                                    class="btn-close"
+                                    type="button"
+                                    data-bs-dismiss="modal"
+                                    aria-label="Close"
+                                ></button>
+                            </div>
+                            <div class="modal-body px-4 py-3">
+                                Are you sure you want to delete
+                                <strong>{{ entry["description"] or entry["category"] }}</strong>?
+                            </div>
+                            <div class="modal-footer border-0 px-4 pt-0 pb-4">
+                                <button class="btn btn-light" type="button" data-bs-dismiss="modal">
+                                    Cancel
+                                </button>
+                                <form action="{{ transaction_page_url }}" method="post">
+                                    <input name="action" type="hidden" value="delete_transaction">
+                                    <input name="transaction_id" type="hidden" value="{{ entry['id'] }}">
+                                    <button class="btn btn-danger" type="submit">Delete</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </td>
+        </tr>
+    {% else %}
+        <tr>
+            <td class="text-center text-secondary py-5" colspan="6">
+                {{ empty_message }}
+            </td>
+        </tr>
+    {% endfor %}
+{% endmacro %}

@@ -1,0 +1,216 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Settings
+{% endblock %}
+
+{% block styles %}
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='settings.css') }}"
+    >
+{% endblock %}
+
+{% block main %}
+    <section class="settings-page py-4 py-lg-5">
+        <div class="container-xl">
+            <header class="mb-4">
+                <h1 class="h2 fw-bold mb-1">Settings</h1>
+                <p class="text-secondary mb-0">Manage your account and categories.</p>
+            </header>
+
+            <div class="row g-4 align-items-start settings-layout">
+                <input class="btn-check" type="radio" name="settings-section" id="settings-account-section" checked>
+                <input class="btn-check" type="radio" name="settings-section" id="settings-categories-section">
+
+                <aside class="col-12 col-lg-3 settings-sidebar" aria-label="Settings navigation">
+                    <div class="card settings-nav-card border-0">
+                        <div class="card-body p-2">
+                            <nav class="settings-nav" role="tablist" aria-label="Settings sections">
+                                <label class="settings-nav-link" for="settings-account-section" role="tab">
+                                    <i class="bi bi-person" aria-hidden="true"></i>
+                                    <span>My Account</span>
+                                </label>
+                                <label class="settings-nav-link" for="settings-categories-section" role="tab">
+                                    <i class="bi bi-tags" aria-hidden="true"></i>
+                                    <span>Manage Categories</span>
+                                </label>
+                            </nav>
+                        </div>
+                    </div>
+                </aside>
+
+                <div class="col-12 col-lg-9 settings-content">
+                    <article class="card settings-card settings-account-panel border-0" aria-labelledby="account-heading">
+                        <div class="card-body p-4 p-lg-5">
+                            <header class="mb-4">
+                                <h2 class="h4 fw-bold mb-1" id="account-heading">My Account</h2>
+                                <p class="text-secondary mb-0">Manage your account information and security.</p>
+                            </header>
+
+                            <section aria-labelledby="account-information-heading">
+                                <div class="d-flex align-items-start justify-content-between gap-3 mb-4">
+                                    <div>
+                                        <h3 class="h6 fw-bold mb-1" id="account-information-heading">Account information</h3>
+                                        <p class="small text-secondary mb-0">Your personal account details.</p>
+                                    </div>
+                                    <button class="btn settings-icon-button" type="button" aria-label="Edit account information">
+                                        <i class="bi bi-pencil" aria-hidden="true"></i>
+                                    </button>
+                                </div>
+
+                                <div class="account-information-view">
+                                    <dl class="row g-0 mb-0 account-details">
+                                        <div class="col-12 col-md-6 account-detail">
+                                            <dt>Email address</dt>
+                                            <dd>user@example.com</dd>
+                                        </div>
+                                        <div class="col-12 col-md-6 account-detail">
+                                            <dt>Member since</dt>
+                                            <dd>August 2026</dd>
+                                        </div>
+                                    </dl>
+                                </div>
+
+                                <!-- Static structure for the future account editing state. -->
+                                <div class="account-information-edit d-none">
+                                    <div class="mb-3">
+                                        <label class="form-label fw-semibold" for="settings-email">Email address</label>
+                                        <input class="form-control settings-form-control" id="settings-email" type="email" value="user@example.com">
+                                    </div>
+                                    <div class="d-flex flex-wrap justify-content-end gap-2">
+                                        <button class="btn btn-light settings-button" type="button">Cancel</button>
+                                        <button class="btn btn-primary settings-button" type="button">Save Changes</button>
+                                    </div>
+                                </div>
+                            </section>
+
+                            <hr class="settings-divider">
+
+                            <section aria-labelledby="password-heading">
+                                <div class="mb-4">
+                                    <h3 class="h6 fw-bold mb-1" id="password-heading">Change Password</h3>
+                                    <p class="small text-secondary mb-0">Use a strong password you do not use elsewhere.</p>
+                                </div>
+
+                                <div class="row g-3">
+                                    <div class="col-12">
+                                        <label class="form-label fw-semibold" for="current-password">Current password</label>
+                                        <input class="form-control settings-form-control" id="current-password" type="password" autocomplete="current-password">
+                                    </div>
+                                    <div class="col-12 col-md-6">
+                                        <label class="form-label fw-semibold" for="new-password">New password</label>
+                                        <input class="form-control settings-form-control" id="new-password" type="password" autocomplete="new-password">
+                                    </div>
+                                    <div class="col-12 col-md-6">
+                                        <label class="form-label fw-semibold" for="confirm-password">Confirm new password</label>
+                                        <input class="form-control settings-form-control" id="confirm-password" type="password" autocomplete="new-password">
+                                    </div>
+                                </div>
+
+                                <button class="btn btn-primary settings-button mt-4" type="button">Change Password</button>
+                            </section>
+                        </div>
+                    </article>
+
+                    <article class="card settings-card settings-categories-panel border-0" aria-labelledby="categories-heading">
+                        <div class="card-body p-4 p-lg-5">
+                            <header class="mb-4">
+                                <h2 class="h4 fw-bold mb-1" id="categories-heading">Manage Categories</h2>
+                                <p class="text-secondary mb-0">Edit the categories you use for income and expenses.</p>
+                            </header>
+
+                            <div class="settings-category-switcher">
+                                <input class="btn-check" type="radio" name="category-type" id="income-categories" checked>
+                                <input class="btn-check" type="radio" name="category-type" id="expense-categories">
+
+                                <div class="btn-group settings-category-tabs mb-4" role="tablist" aria-label="Category type">
+                                    <label class="btn" for="income-categories" role="tab">
+                                        Income
+                                    </label>
+                                    <label class="btn" for="expense-categories" role="tab">
+                                        Expenses
+                                    </label>
+                                </div>
+
+                                <div class="settings-category-panels">
+                                    <section class="settings-category-pane income-category-pane" aria-label="Income categories">
+                                        <div class="settings-category-list">
+                                            <div class="settings-category-row">
+                                                <span class="settings-category-name">Salary</span>
+                                                <button class="btn settings-category-edit-button" type="button" aria-label="Edit Salary category">
+                                                    <i class="bi bi-pencil" aria-hidden="true"></i>
+                                                </button>
+                                            </div>
+
+                                            <!-- Static preview of a category row in edit mode. -->
+                                            <div class="settings-category-row settings-category-row-editing">
+                                                <div class="settings-category-edit-actions">
+                                                    <button class="btn btn-light settings-row-button" type="button">Cancel</button>
+                                                    <button class="btn btn-primary settings-row-button" type="button">Save</button>
+                                                </div>
+                                                <label class="visually-hidden" for="edit-freelance-category">Category name</label>
+                                                <input class="form-control settings-category-input" id="edit-freelance-category" type="text" value="Freelance">
+                                                <button class="btn settings-category-delete-button" type="button" aria-label="Delete Freelance category">
+                                                    <i class="bi bi-trash3" aria-hidden="true"></i>
+                                                </button>
+                                            </div>
+
+                                            <div class="settings-category-row">
+                                                <span class="settings-category-name">Interest</span>
+                                                <button class="btn settings-category-edit-button" type="button" aria-label="Edit Interest category">
+                                                    <i class="bi bi-pencil" aria-hidden="true"></i>
+                                                </button>
+                                            </div>
+                                            <div class="settings-category-row">
+                                                <span class="settings-category-name">Other</span>
+                                                <button class="btn settings-category-edit-button" type="button" aria-label="Edit Other income category">
+                                                    <i class="bi bi-pencil" aria-hidden="true"></i>
+                                                </button>
+                                            </div>
+                                            <div class="settings-category-footer">
+                                                <button class="btn btn-outline-primary settings-add-category" type="button">
+                                                    <i class="bi bi-plus-lg me-2" aria-hidden="true"></i>Add Category
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </section>
+
+                                    <section class="settings-category-pane expense-category-pane" aria-label="Expense categories">
+                                        <div class="settings-category-list">
+                                            <div class="settings-category-row">
+                                                <span class="settings-category-name">Rent</span>
+                                                <button class="btn settings-category-edit-button" type="button" aria-label="Edit Rent category"><i class="bi bi-pencil" aria-hidden="true"></i></button>
+                                            </div>
+                                            <div class="settings-category-row">
+                                                <span class="settings-category-name">Groceries</span>
+                                                <button class="btn settings-category-edit-button" type="button" aria-label="Edit Groceries category"><i class="bi bi-pencil" aria-hidden="true"></i></button>
+                                            </div>
+                                            <div class="settings-category-row">
+                                                <span class="settings-category-name">Transportation</span>
+                                                <button class="btn settings-category-edit-button" type="button" aria-label="Edit Transportation category"><i class="bi bi-pencil" aria-hidden="true"></i></button>
+                                            </div>
+                                            <div class="settings-category-row">
+                                                <span class="settings-category-name">Utilities</span>
+                                                <button class="btn settings-category-edit-button" type="button" aria-label="Edit Utilities category"><i class="bi bi-pencil" aria-hidden="true"></i></button>
+                                            </div>
+                                            <div class="settings-category-row">
+                                                <span class="settings-category-name">Entertainment</span>
+                                                <button class="btn settings-category-edit-button" type="button" aria-label="Edit Entertainment category"><i class="bi bi-pencil" aria-hidden="true"></i></button>
+                                            </div>
+                                            <div class="settings-category-footer">
+                                                <button class="btn btn-outline-primary settings-add-category" type="button">
+                                                    <i class="bi bi-plus-lg me-2" aria-hidden="true"></i>Add Category
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </section>
+                                </div>
+                            </div>
+                        </div>
+                    </article>
+                </div>
+            </div>
+        </div>
+    </section>
+{% endblock %}
