@@ -340,6 +340,15 @@ def plan():
     plan_data = organize_plan_items(plan_items)
     previous_month = shift_plan_month(selected_month, -1)
     next_month = shift_plan_month(selected_month, 1)
+    new_plan_months = []
+
+    # The modal shows month names while each option carries its full year-month.
+    for offset in range(12):
+        month_option = shift_plan_month(selected_month, offset)
+        new_plan_months.append({
+            "label": month_option.strftime("%B"),
+            "value": month_option.strftime("%Y-%m")
+        })
 
     return render_template(
         "plan.html",
@@ -350,6 +359,12 @@ def plan():
         previous_month_value=previous_month.strftime("%Y-%m"),
         next_month_label=next_month.strftime("%B"),
         next_month_value=next_month.strftime("%Y-%m"),
+        new_plan_months=new_plan_months,
+        new_plan_default_value=(
+            next_month.strftime("%Y-%m")
+            if selected_plan
+            else selected_month.strftime("%Y-%m")
+        ),
         plan=selected_plan,
         plan_exists=selected_plan is not None,
         saved_months=load_saved_plan_months(db, user_id),

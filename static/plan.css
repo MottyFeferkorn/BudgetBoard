@@ -179,8 +179,20 @@
     gap: 0.55rem;
 }
 
+.plan-amount-form {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
 .plan-amount-input {
     width: 12rem;
+}
+
+.plan-amount-save {
+    min-height: 2.65rem;
+    border-radius: 0.7rem;
+    font-weight: 600;
 }
 
 .plan-amount-input .input-group-text,
@@ -241,6 +253,22 @@
     color: #6c757d;
     font-size: 0.75rem;
     line-height: 1.35;
+}
+
+.plan-empty-state {
+    border-bottom: 1px solid #edf0f2;
+    background-color: #fbfcfd;
+}
+
+.plan-empty-icon {
+    display: grid;
+    width: 2.75rem;
+    height: 2.75rem;
+    place-items: center;
+    border-radius: 0.8rem;
+    background-color: rgba(13, 110, 253, 0.09);
+    color: #0d6efd;
+    font-size: 1.1rem;
 }
 
 .plan-category-footer {
@@ -352,9 +380,19 @@
         padding: 1rem;
     }
 
-    .plan-category-actions,
-    .plan-amount-input {
+    .plan-category-actions {
         width: 100%;
+    }
+
+    .plan-amount-form {
+        min-width: 0;
+        flex: 1 1 auto;
+    }
+
+    .plan-amount-input {
+        width: auto;
+        min-width: 0;
+        flex: 1 1 auto;
     }
 
     .plan-category-actions .dropdown {
