@@ -504,3 +504,7 @@ def accounts():
     # Confirm the insert after redirecting back to the Accounts page.
     flash("Account added successfully.", "success")
     return redirect("/accounts")
+
+@app.route("/settings")
+def settings():
+    return render_template("settings.html")
