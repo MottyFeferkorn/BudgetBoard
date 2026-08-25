@@ -587,6 +587,175 @@ def organize_plan_items(plan_items):
     }
 
 
+def validate_account_details(account_name, bank):
+    """Clean and validate the editable account fields."""
+    account_name = (account_name or "").strip()
+    bank = (bank or "").strip() or None
+
+    if not account_name:
+        raise ValidationError("Account name is required.")
+
+    if len(account_name) > 50:
+        raise ValidationError(
+            "Account name must be 50 characters or fewer."
+        )
+
+    if bank and len(bank) > 100:
+        raise ValidationError("Bank name must be 100 characters or fewer.")
+
+    return account_name, bank
+
+
+def get_owned_account(db, user_id, account_id):
+    """Find an account only when it belongs to the current user."""
+    account_id = parse_record_id(account_id, "account")
+    accounts = db.execute(
+        """
+        SELECT id, user_id, name, type, bank, active, created_at
+        FROM accounts
+        WHERE id = ?
+          AND user_id = ?
+        LIMIT 1
+        """,
+        account_id,
+        user_id
+    )
+
+    if not accounts:
+        raise ValidationError("Account not found.")
+
+    return accounts[0]
+
+
+def create_account(db, user_id, account_name, account_type, bank):
+    """Create an active account for the current user."""
+    account_name, bank = validate_account_details(account_name, bank)
+    account_type = (account_type or "").strip().lower()
+
+    try:
+        return db.execute(
+            """
+            INSERT INTO accounts (user_id, name, type, bank, active)
+            VALUES (?, ?, ?, ?, 1)
+            """,
+            user_id,
+            account_name,
+            account_type,
+            bank
+        )
+    except ValueError as error:
+        # The accounts table CHECK constraint validates the account type.
+        raise ValidationError(
+            "Please select a valid account type."
+        ) from error
+
+
+def update_account(db, user_id, account_id, account_name, bank):
+    """Update an active account's name and optional bank."""
+    account = get_owned_account(db, user_id, account_id)
+    account_name, bank = validate_account_details(account_name, bank)
+
+    if account["active"] != 1:
+        raise ValidationError("Activate this account before editing it.")
+
+    db.execute(
+        """
+        UPDATE accounts
+        SET name = ?,
+            bank = ?
+        WHERE id = ?
+          AND user_id = ?
+          AND active = 1
+        """,
+        account_name,
+        bank,
+        account["id"],
+        user_id
+    )
+
+
+def set_account_active(db, user_id, account_id, active_value):
+    """Set one of the user's accounts to active (1) or inactive (0)."""
+    account = get_owned_account(db, user_id, account_id)
+
+    if active_value not in (0, 1):
+        raise ValidationError("Choose a valid account status.")
+
+    if account["active"] == active_value:
+        status = "active" if active_value == 1 else "inactive"
+        raise ValidationError(f"This account is already {status}.")
+
+    db.execute(
+        """
+        UPDATE accounts
+        SET active = ?
+        WHERE id = ?
+          AND user_id = ?
+        """,
+        active_value,
+        account["id"],
+        user_id
+    )
+
+
+def load_accounts(db, user_id, active_value):
+    """Load active or inactive accounts and calculate page totals."""
+    if active_value not in (0, 1):
+        raise ValidationError("Choose a valid account status.")
+
+    account_rows = db.execute(
+        """
+        SELECT
+            accounts.id,
+            accounts.name,
+            accounts.type,
+            accounts.bank,
+            accounts.active,
+            COALESCE(income_totals.total_income, 0) AS total_income,
+            COALESCE(expense_totals.total_expenses, 0) AS total_expenses
+        FROM accounts
+
+        LEFT JOIN (
+            SELECT account_id, SUM(amount) AS total_income
+            FROM income
+            WHERE user_id = ?
+            GROUP BY account_id
+        ) AS income_totals
+            ON income_totals.account_id = accounts.id
+
+        LEFT JOIN (
+            SELECT account_id, SUM(amount) AS total_expenses
+            FROM expenses
+            WHERE user_id = ?
+            GROUP BY account_id
+        ) AS expense_totals
+            ON expense_totals.account_id = accounts.id
+
+        WHERE accounts.user_id = ?
+          AND accounts.active = ?
+        ORDER BY accounts.name COLLATE NOCASE
+        """,
+        user_id,
+        user_id,
+        user_id,
+        active_value
+    )
+
+    total_income = 0
+    total_expenses = 0
+    total_balance = 0
+
+    for account in account_rows:
+        account["balance"] = (
+            account["total_income"] - account["total_expenses"]
+        )
+        total_income += account["total_income"]
+        total_expenses += account["total_expenses"]
+        total_balance += account["balance"]
+
+    return account_rows, total_income, total_expenses, total_balance
+
+
 def get_transaction_settings(transaction_table):
     """Return trusted display and SQL settings for a transaction page."""
     transaction_settings = {
@@ -680,6 +849,7 @@ def validate_transaction_account(db, user_id, value):
         FROM accounts
         WHERE id = ?
           AND user_id = ?
+          AND active = 1
         LIMIT 1
         """,
         account_id,
@@ -868,7 +1038,13 @@ def transaction_page(db, transaction_table, limit):
     )
 
     accounts = db.execute(
-        "SELECT id, name FROM accounts WHERE user_id = ? ORDER BY name",
+        """
+        SELECT id, name
+        FROM accounts
+        WHERE user_id = ?
+          AND active = 1
+        ORDER BY name
+        """,
         user_id
     )
     categories = db.execute(
@@ -1123,7 +1299,8 @@ def transaction_page(db, transaction_table, limit):
             date({table}.date) AS raw_date,
             strftime('%m/%d/%Y', {table}.date) AS display_date,
             categories.name AS category,
-            accounts.name AS account
+            accounts.name AS account,
+            accounts.active AS account_active
         FROM {table}
         JOIN categories
             ON categories.id = {table}.category_id

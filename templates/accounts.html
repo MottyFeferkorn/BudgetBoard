@@ -4,45 +4,90 @@
     Accounts
 {% endblock %}
 
-
-
 {% block main %}
     <section class="accounts-page py-4 py-lg-5">
         <div class="container-xl">
-            <div class="d-flex flex-column flex-sm-row align-items-sm-center justify-content-between gap-3 mb-4">
+            <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3 mb-4">
                 <div>
-                    <h1 class="h2 fw-bold mb-1">Accounts</h1>
-                    <p class="text-secondary mb-0">Manage where your money is stored.</p>
+                    <div class="d-flex align-items-center gap-2 mb-1">
+                        <h1 class="h2 fw-bold mb-0">{{ "Inactive accounts" if show_inactive else "Accounts" }}</h1>
+                        <span class="badge rounded-pill text-bg-light border">{{ account_count }}</span>
+                    </div>
+                    <p class="text-secondary mb-0">
+                        {% if show_inactive %}
+                            Review accounts that are hidden from new transactions.
+                        {% else %}
+                            Manage where your money is stored.
+                        {% endif %}
+                    </p>
                 </div>
 
-                <button
-                    class="btn btn-primary accounts-add-button align-self-start align-self-sm-center px-4"
-                    type="button"
-                    data-bs-toggle="modal"
-                    data-bs-target="#addAccountModal"
-                >
-                    <span class="me-1" aria-hidden="true">+</span> Add Account
-                </button>
+                <div class="d-flex flex-wrap gap-2 align-self-start align-self-md-center">
+                    <a class="btn btn-outline-secondary accounts-filter-button px-3" href="{{ account_filter_url }}">
+                        {% if show_inactive %}
+                            <i class="bi bi-wallet2 me-1" aria-hidden="true"></i> Show active accounts
+                        {% else %}
+                            <i class="bi bi-archive me-1" aria-hidden="true"></i> Show inactive accounts
+                        {% endif %}
+                    </a>
+
+                    {% if not show_inactive %}
+                        <button
+                            class="btn btn-primary accounts-add-button px-4"
+                            type="button"
+                            data-bs-toggle="modal"
+                            data-bs-target="#addAccountModal"
+                        >
+                            <span class="me-1" aria-hidden="true">+</span> Add Account
+                        </button>
+                    {% endif %}
+                </div>
             </div>
 
-            <div class="card accounts-summary-card border-0 mb-4">
-                <div class="card-body p-4">
-                    <div class="row align-items-center g-4">
-                        <div class="col-sm-7">
+            <div class="row g-3 mb-4">
+                <div class="col-12 col-md-4">
+                    <div class="card accounts-summary-card border-0 h-100">
+                        <div class="card-body p-4">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="accounts-summary-icon accounts-summary-income" aria-hidden="true">
+                                    <i class="bi bi-arrow-down"></i>
+                                </div>
+                                <div>
+                                    <p class="text-secondary small mb-1">Total income</p>
+                                    <p class="h4 fw-bold text-success mb-0">{{ total_income | usd }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-md-4">
+                    <div class="card accounts-summary-card border-0 h-100">
+                        <div class="card-body p-4">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="accounts-summary-icon accounts-summary-expense" aria-hidden="true">
+                                    <i class="bi bi-arrow-up"></i>
+                                </div>
+                                <div>
+                                    <p class="text-secondary small mb-1">Total expenses</p>
+                                    <p class="h4 fw-bold text-danger mb-0">{{ total_expenses | usd }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-md-4">
+                    <div class="card accounts-summary-card border-0 h-100">
+                        <div class="card-body p-4">
                             <div class="d-flex align-items-center gap-3">
                                 <div class="accounts-summary-icon" aria-hidden="true">
                                     <i class="bi bi-wallet2"></i>
                                 </div>
                                 <div>
                                     <p class="text-secondary small mb-1">Total balance</p>
-                                    <p class="display-6 fw-bold mb-0">{{ total_balance | usd }}</p>
+                                    <p class="h4 fw-bold mb-0 {% if total_balance > 0 %}text-success{% elif total_balance < 0 %}text-danger{% endif %}">
+                                        {{ total_balance | usd }}
+                                    </p>
                                 </div>
-                            </div>
-                        </div>
-                        <div class="col-sm-5">
-                            <div class="accounts-summary-detail ps-sm-4">
-                                <p class="text-secondary small mb-1">Number of accounts</p>
-                                <p class="h5 fw-semibold mb-0">{{ account_count }} account{% if account_count != 1 %}s{% endif %}</p>
                             </div>
                         </div>
                     </div>
@@ -51,65 +96,221 @@
 
             <div class="row g-4">
                 {% for account in accounts %}
+                    {% set editor_class = "account-item-" ~ account["id"] %}
+                    {% set status_modal_id = "accountStatusModal-" ~ account["id"] %}
                     <div class="col-12 col-md-6 col-xl-4">
-                        <article class="card account-card border-0 h-100">
-                            <div class="card-body p-4">
-                                <div class="d-flex align-items-start justify-content-between gap-3 mb-4">
-                                    <div class="d-flex align-items-center gap-3 min-w-0">
-                                        <div class="account-icon account-icon-{{ account.type | replace(' ', '-') }}" aria-hidden="true">
-                                            {% if account.type == "checking" %}
-                                                <i class="bi bi-bank"></i>
-                                            {% elif account.type == "savings" %}
-                                                <i class="bi bi-piggy-bank"></i>
-                                            {% elif account.type == "cash" %}
-                                                <i class="bi bi-cash-stack"></i>
-                                            {% elif account.type == "credit card" %}
-                                                <i class="bi bi-credit-card"></i>
-                                            {% elif account.type == "investment" %}
-                                                <i class="bi bi-graph-up-arrow"></i>
-                                            {% else %}
-                                                <i class="bi bi-wallet2"></i>
-                                            {% endif %}
+                        <article class="card account-card border-0 h-100 {% if show_inactive %}account-card-inactive{% endif %}">
+                            {% if not show_inactive %}
+                                <div class="collapse show {{ editor_class }}">
+                                    <div class="card-body p-4">
+                                        <div class="d-flex align-items-start justify-content-between gap-3 mb-4">
+                                            <div class="d-flex align-items-center gap-3 min-w-0">
+                                                <div class="account-icon account-icon-{{ account['type'] | replace(' ', '-') }}" aria-hidden="true">
+                                                    {% if account["type"] == "checking" %}
+                                                        <i class="bi bi-bank"></i>
+                                                    {% elif account["type"] == "savings" %}
+                                                        <i class="bi bi-piggy-bank"></i>
+                                                    {% elif account["type"] == "cash" %}
+                                                        <i class="bi bi-cash-stack"></i>
+                                                    {% elif account["type"] == "credit card" %}
+                                                        <i class="bi bi-credit-card"></i>
+                                                    {% elif account["type"] == "investment" %}
+                                                        <i class="bi bi-graph-up-arrow"></i>
+                                                    {% else %}
+                                                        <i class="bi bi-wallet2"></i>
+                                                    {% endif %}
+                                                </div>
+                                                <div class="min-w-0">
+                                                    <h2 class="h5 fw-bold text-truncate mb-1">{{ account["name"] }}</h2>
+                                                    <span class="account-type account-type-{{ account['type'] | replace(' ', '-') }}">
+                                                        {{ account["type"] | title }}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <button
+                                                class="btn account-edit-trigger"
+                                                type="button"
+                                                data-bs-toggle="collapse"
+                                                data-bs-target=".{{ editor_class }}"
+                                                aria-expanded="false"
+                                                aria-label="Edit {{ account['name'] }}"
+                                                title="Edit account"
+                                            >
+                                                <i class="bi bi-pencil" aria-hidden="true"></i>
+                                            </button>
                                         </div>
-                                        <div class="min-w-0">
-                                            <h2 class="h5 fw-bold text-truncate mb-1">{{ account.name }}</h2>
-                                            <span class="account-type account-type-{{ account.type | replace(' ', '-') }}">
-                                                {{ account.type | title }}
-                                            </span>
-                                        </div>
-                                    </div>
 
-                                    <div class="dropdown">
-                                        <button
-                                            class="btn account-menu-button"
-                                            type="button"
-                                            data-bs-toggle="dropdown"
-                                            aria-expanded="false"
-                                            aria-label="Open {{ account.name }} account menu"
-                                        >
-                                            <i class="bi bi-three-dots"></i>
-                                        </button>
-                                        <ul class="dropdown-menu dropdown-menu-end account-menu shadow-sm">
-                                            <li>
-                                                <button class="dropdown-item" type="button">
-                                                    <i class="bi bi-pencil me-2"></i>Edit account
-                                                </button>
-                                            </li>
-                                            <li><hr class="dropdown-divider"></li>
-                                            <li>
-                                                <button class="dropdown-item text-danger" type="button">
-                                                    <i class="bi bi-trash3 me-2"></i>Delete account
-                                                </button>
-                                            </li>
-                                        </ul>
+                                        <p class="text-secondary small mb-1">Bank</p>
+                                        <p class="fw-medium mb-4">{{ account["bank"] or "None" }}</p>
+
+                                        <div class="row g-3 account-totals py-3 border-top border-bottom">
+                                            <div class="col-6">
+                                                <p class="text-secondary small mb-1">Income</p>
+                                                <p class="fw-semibold text-success mb-0">{{ account["total_income"] | usd }}</p>
+                                            </div>
+                                            <div class="col-6 text-end">
+                                                <p class="text-secondary small mb-1">Expenses</p>
+                                                <p class="fw-semibold text-danger mb-0">{{ account["total_expenses"] | usd }}</p>
+                                            </div>
+                                        </div>
+
+                                        <div class="account-balance pt-3">
+                                            <p class="text-secondary small mb-1">Current balance</p>
+                                            <p class="h3 fw-bold mb-0 {% if account['balance'] > 0 %}text-success{% elif account['balance'] < 0 %}text-danger{% endif %}">
+                                                {{ account["balance"] | usd }}
+                                            </p>
+                                        </div>
                                     </div>
                                 </div>
 
-                                <p class="text-secondary small mb-1">Bank</p>
-                                <p class="fw-medium mb-4">{{ account.bank or "None" }}</p>
-                                <div class="account-balance pt-3 border-top">
-                                    <p class="text-secondary small mb-1">Current balance</p>
-                                    <p class="h3 fw-bold mb-0">{{ account.balance | usd }}</p>
+                                <div class="collapse {{ editor_class }}">
+                                    <form action="{{ accounts_url }}" method="post">
+                                        <input name="action" type="hidden" value="update_account">
+                                        <input name="account_id" type="hidden" value="{{ account['id'] }}">
+                                        <div class="card-body p-4">
+                                            <div class="d-flex align-items-center justify-content-between gap-3 mb-4">
+                                                <div>
+                                                    <h2 class="h5 fw-bold mb-1">Edit account</h2>
+                                                    <span class="account-type account-type-{{ account['type'] | replace(' ', '-') }}">
+                                                        {{ account["type"] | title }}
+                                                    </span>
+                                                </div>
+                                                <button
+                                                    class="btn btn-sm btn-link text-danger account-deactivate-trigger"
+                                                    type="button"
+                                                    data-bs-toggle="modal"
+                                                    data-bs-target="#{{ status_modal_id }}"
+                                                    aria-label="Deactivate {{ account['name'] }}"
+                                                    title="Deactivate account"
+                                                >
+                                                    <i class="bi bi-trash3 fs-5" aria-hidden="true"></i>
+                                                </button>
+                                            </div>
+
+                                            <div class="mb-3">
+                                                <label class="form-label fw-medium" for="account-name-{{ account['id'] }}">Account name</label>
+                                                <input
+                                                    class="form-control"
+                                                    id="account-name-{{ account['id'] }}"
+                                                    name="account_name"
+                                                    type="text"
+                                                    maxlength="50"
+                                                    value="{{ account['name'] }}"
+                                                    required
+                                                >
+                                            </div>
+                                            <div class="mb-4">
+                                                <label class="form-label fw-medium" for="account-bank-{{ account['id'] }}">Bank</label>
+                                                <input
+                                                    class="form-control"
+                                                    id="account-bank-{{ account['id'] }}"
+                                                    name="bank"
+                                                    type="text"
+                                                    maxlength="100"
+                                                    value="{{ account['bank'] or '' }}"
+                                                    placeholder="Optional"
+                                                >
+                                            </div>
+                                            <div class="d-flex justify-content-end gap-2">
+                                                <button
+                                                    class="btn btn-outline-secondary px-3"
+                                                    type="reset"
+                                                    data-bs-toggle="collapse"
+                                                    data-bs-target=".{{ editor_class }}"
+                                                    aria-expanded="true"
+                                                >
+                                                    Cancel
+                                                </button>
+                                                <button class="btn btn-primary px-4" type="submit">Save</button>
+                                            </div>
+                                        </div>
+                                    </form>
+                                </div>
+                            {% else %}
+                                <div class="card-body p-4">
+                                    <div class="d-flex align-items-start justify-content-between gap-3 mb-4">
+                                        <div class="d-flex align-items-center gap-3 min-w-0">
+                                            <div class="account-icon account-icon-other" aria-hidden="true">
+                                                <i class="bi bi-archive"></i>
+                                            </div>
+                                            <div class="min-w-0">
+                                                <h2 class="h5 fw-bold text-truncate mb-1">{{ account["name"] }}</h2>
+                                                <span class="badge rounded-pill text-bg-secondary">Inactive</span>
+                                            </div>
+                                        </div>
+                                        <button
+                                            class="btn btn-sm btn-outline-primary account-activate-button"
+                                            type="button"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#{{ status_modal_id }}"
+                                        >
+                                            <i class="bi bi-arrow-counterclockwise me-1" aria-hidden="true"></i> Activate
+                                        </button>
+                                    </div>
+
+                                    <p class="text-secondary small mb-1">Bank</p>
+                                    <p class="fw-medium mb-4">{{ account["bank"] or "None" }}</p>
+
+                                    <div class="row g-3 account-totals py-3 border-top border-bottom">
+                                        <div class="col-6">
+                                            <p class="text-secondary small mb-1">Income</p>
+                                            <p class="fw-semibold text-success mb-0">{{ account["total_income"] | usd }}</p>
+                                        </div>
+                                        <div class="col-6 text-end">
+                                            <p class="text-secondary small mb-1">Expenses</p>
+                                            <p class="fw-semibold text-danger mb-0">{{ account["total_expenses"] | usd }}</p>
+                                        </div>
+                                    </div>
+
+                                    <div class="account-balance pt-3">
+                                        <p class="text-secondary small mb-1">Final balance</p>
+                                        <p class="h3 fw-bold mb-0 {% if account['balance'] > 0 %}text-success{% elif account['balance'] < 0 %}text-danger{% endif %}">
+                                            {{ account["balance"] | usd }}
+                                        </p>
+                                    </div>
+                                </div>
+                            {% endif %}
+
+                            <div
+                                class="modal fade"
+                                id="{{ status_modal_id }}"
+                                tabindex="-1"
+                                aria-labelledby="{{ status_modal_id }}Label"
+                                aria-hidden="true"
+                            >
+                                <div class="modal-dialog modal-dialog-centered">
+                                    <div class="modal-content account-modal-content">
+                                        <div class="modal-header border-0 px-4 pt-4 pb-2">
+                                            <div>
+                                                <h2 class="modal-title h5 fw-bold" id="{{ status_modal_id }}Label">
+                                                    {{ "Activate" if show_inactive else "Deactivate" }} account?
+                                                </h2>
+                                                <p class="text-secondary small mb-0">
+                                                    {% if show_inactive %}
+                                                        This account will be available for new transactions again.
+                                                    {% else %}
+                                                        Existing income and expenses will remain safely attached.
+                                                    {% endif %}
+                                                </p>
+                                            </div>
+                                            <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        </div>
+                                        <div class="modal-body px-4 py-3">
+                                            Are you sure you want to {{ "activate" if show_inactive else "deactivate" }}
+                                            <strong>{{ account["name"] }}</strong>?
+                                        </div>
+                                        <div class="modal-footer border-0 px-4 pt-0 pb-4">
+                                            <button class="btn btn-light" type="button" data-bs-dismiss="modal">Cancel</button>
+                                            <form action="{{ accounts_url }}" method="post">
+                                                <input name="action" type="hidden" value="set_account_active">
+                                                <input name="account_id" type="hidden" value="{{ account['id'] }}">
+                                                <input name="active" type="hidden" value="{{ 1 if show_inactive else 0 }}">
+                                                <button class="btn {{ 'btn-primary' if show_inactive else 'btn-danger' }}" type="submit">
+                                                    {{ "Activate account" if show_inactive else "Deactivate account" }}
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </article>
@@ -119,18 +320,24 @@
                         <div class="card account-card border-0 text-center">
                             <div class="card-body p-5">
                                 <div class="accounts-summary-icon mx-auto mb-3" aria-hidden="true">
-                                    <i class="bi bi-wallet2"></i>
+                                    <i class="bi {{ 'bi-archive' if show_inactive else 'bi-wallet2' }}"></i>
                                 </div>
-                                <h2 class="h5 fw-bold mb-2">No accounts yet</h2>
-                                <p class="text-secondary mb-4">Add your first account to start tracking its balance.</p>
-                                <button
-                                    class="btn btn-primary accounts-add-button px-4"
-                                    type="button"
-                                    data-bs-toggle="modal"
-                                    data-bs-target="#addAccountModal"
-                                >
-                                    <span class="me-1" aria-hidden="true">+</span> Add Account
-                                </button>
+                                {% if show_inactive %}
+                                    <h2 class="h5 fw-bold mb-2">No inactive accounts</h2>
+                                    <p class="text-secondary mb-4">Deactivated accounts will appear here.</p>
+                                    <a class="btn btn-outline-primary px-4" href="{{ account_filter_url }}">Show active accounts</a>
+                                {% else %}
+                                    <h2 class="h5 fw-bold mb-2">No accounts yet</h2>
+                                    <p class="text-secondary mb-4">Add your first account to start tracking its balance.</p>
+                                    <button
+                                        class="btn btn-primary accounts-add-button px-4"
+                                        type="button"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#addAccountModal"
+                                    >
+                                        <span class="me-1" aria-hidden="true">+</span> Add Account
+                                    </button>
+                                {% endif %}
                             </div>
                         </div>
                     </div>
@@ -139,45 +346,63 @@
         </div>
     </section>
 
-    <div class="modal fade" id="addAccountModal" tabindex="-1" aria-labelledby="addAccountModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content account-modal-content">
-                <div class="modal-header border-0 px-4 pt-4 pb-2">
-                    <div>
-                        <h2 class="modal-title h4 fw-bold" id="addAccountModalLabel">Add account</h2>
-                        <p class="text-secondary small mb-0">Add a place where you keep your money.</p>
-                    </div>
-                    <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <form action="/accounts" method="post">
-                    <div class="modal-body px-4 py-3">
-                        <div class="mb-3">
-                            <label class="form-label fw-medium" for="account-name">Account name</label>
-                            <input class="form-control" id="account-name" name="account_name" type="text" placeholder="For example, Main Checking">
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label fw-medium" for="account-type">Account type</label>
-                            <select class="form-select" id="account-type" name="account_type">
-                                <option value="" selected disabled>Select account type</option>
-                                <option value="checking">Checking</option>
-                                <option value="savings">Savings</option>
-                                <option value="cash">Cash</option>
-                                <option value="credit card">Credit Card</option>
-                                <option value="investment">Investment</option>
-                                <option value="other">Other</option>
-                            </select>
-                        </div>
+    {% if not show_inactive %}
+        <div class="modal fade" id="addAccountModal" tabindex="-1" aria-labelledby="addAccountModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content account-modal-content">
+                    <div class="modal-header border-0 px-4 pt-4 pb-2">
                         <div>
-                            <label class="form-label fw-medium" for="account-bank">Bank</label>
-                            <input class="form-control" id="account-bank" name="bank" type="text" placeholder="For example, Chase">
+                            <h2 class="modal-title h4 fw-bold" id="addAccountModalLabel">Add account</h2>
+                            <p class="text-secondary small mb-0">Add a place where you keep your money.</p>
                         </div>
+                        <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
-                    <div class="modal-footer border-0 px-4 pt-2 pb-4">
-                        <button class="btn btn-light px-4" type="button" data-bs-dismiss="modal">Cancel</button>
-                        <button class="btn btn-primary px-4" type="submit">Create account</button>
-                    </div>
-                </form>
+                    <form action="{{ accounts_url }}" method="post">
+                        <input name="action" type="hidden" value="add_account">
+                        <div class="modal-body px-4 py-3">
+                            <div class="mb-3">
+                                <label class="form-label fw-medium" for="account-name">Account name</label>
+                                <input
+                                    class="form-control"
+                                    id="account-name"
+                                    name="account_name"
+                                    type="text"
+                                    maxlength="50"
+                                    placeholder="For example, Main Checking"
+                                    required
+                                >
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-medium" for="account-type">Account type</label>
+                                <select class="form-select" id="account-type" name="account_type" required>
+                                    <option value="" selected disabled>Select account type</option>
+                                    <option value="checking">Checking</option>
+                                    <option value="savings">Savings</option>
+                                    <option value="cash">Cash</option>
+                                    <option value="credit card">Credit Card</option>
+                                    <option value="investment">Investment</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="form-label fw-medium" for="account-bank">Bank</label>
+                                <input
+                                    class="form-control"
+                                    id="account-bank"
+                                    name="bank"
+                                    type="text"
+                                    maxlength="100"
+                                    placeholder="For example, Chase"
+                                >
+                            </div>
+                        </div>
+                        <div class="modal-footer border-0 px-4 pt-2 pb-4">
+                            <button class="btn btn-light px-4" type="button" data-bs-dismiss="modal">Cancel</button>
+                            <button class="btn btn-primary px-4" type="submit">Create account</button>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
-    </div>
+    {% endif %}
 {% endblock %}

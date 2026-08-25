@@ -86,6 +86,11 @@
                         aria-label="Transaction account"
                         required
                     >
+                        {% if entry["account_active"] == 0 %}
+                            <option value="" selected disabled>
+                                {{ entry["account"] }} is inactive — choose an active account
+                            </option>
+                        {% endif %}
                         {% for account in accounts %}
                             <option
                                 value="{{ account['id'] }}"

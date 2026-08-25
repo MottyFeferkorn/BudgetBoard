@@ -11,10 +11,12 @@ from helpers import (
     ValidationError,
     add_budget_plan_item,
     change_plan_item_category,
+    create_account,
     create_budget_plan,
     get_budget_plan,
     get_or_create_category,
     load_budget_plan_items,
+    load_accounts,
     load_saved_plan_months,
     load_user_categories,
     login_required,
@@ -23,7 +25,9 @@ from helpers import (
     parse_record_id,
     remove_budget_plan_item,
     shift_plan_month,
+    set_account_active,
     transaction_page,
+    update_account,
     update_budget_plan_item,
     usd,
     validate_plan_amount
@@ -417,94 +421,90 @@ def expenses(limit):
 
 
 @app.route("/accounts", methods=["GET", "POST"])
+@login_required
 def accounts():
-    # Load each account with separately aggregated income and expense totals.
-    if request.method == "GET":
-        user_id = session["user_id"]
+    user_id = session["user_id"]
+    show_inactive = request.args.get("status") == "inactive"
+    active_value = 0 if show_inactive else 1
+    accounts_url = url_for(
+        "accounts",
+        status="inactive" if show_inactive else None,
+        _external=True
+    )
+    account_filter_url = url_for(
+        "accounts",
+        status=None if show_inactive else "inactive",
+        _external=True
+    )
 
-        account_rows = db.execute(
-            """
-            SELECT
-                accounts.id,
-                accounts.name,
-                accounts.type,
-                accounts.bank,
-                COALESCE(income_totals.total_income, 0) AS total_income,
-                COALESCE(expense_totals.total_expenses, 0) AS total_expenses
-            FROM accounts
+    if request.method == "POST":
+        action = (
+            request.form.get("action") or "add_account"
+        ).strip()
 
-            LEFT JOIN (
-                SELECT
-                    account_id,
-                    SUM(amount) AS total_income
-                FROM income
-                WHERE user_id = ?
-                GROUP BY account_id
-            ) AS income_totals
-                ON income_totals.account_id = accounts.id
+        try:
+            if action == "add_account":
+                create_account(
+                    db,
+                    user_id,
+                    request.form.get("account_name"),
+                    request.form.get("account_type"),
+                    request.form.get("bank")
+                )
+                flash("Account added successfully.", "success")
 
-            LEFT JOIN (
-                SELECT
-                    account_id,
-                    SUM(amount) AS total_expenses
-                FROM expenses
-                WHERE user_id = ?
-                GROUP BY account_id
-            ) AS expense_totals
-                ON expense_totals.account_id = accounts.id
+            elif action == "update_account":
+                update_account(
+                    db,
+                    user_id,
+                    request.form.get("account_id"),
+                    request.form.get("account_name"),
+                    request.form.get("bank")
+                )
+                flash("Account updated successfully.", "success")
 
-            WHERE accounts.user_id = ?
-            ORDER BY accounts.name
-            """,
-            user_id,
-            user_id,
-            user_id
-        )
+            elif action == "set_account_active":
+                try:
+                    new_active_value = int(request.form.get("active"))
+                except (TypeError, ValueError) as error:
+                    raise ValidationError(
+                        "Choose a valid account status."
+                    ) from error
 
-        # Calculate each account balance and the combined balance in Python.
-        total_balance = 0
+                set_account_active(
+                    db,
+                    user_id,
+                    request.form.get("account_id"),
+                    new_active_value
+                )
+                status_label = (
+                    "activated" if new_active_value == 1 else "deactivated"
+                )
+                flash(f"Account {status_label}.", "success")
 
-        for account in account_rows:
-            account["balance"] = (
-                account["total_income"] - account["total_expenses"]
-            )
-            total_balance += account["balance"]
+            else:
+                raise ValidationError("Choose a valid account action.")
 
-        return render_template(
-            "accounts.html",
-            accounts=account_rows,
-            total_balance=total_balance,
-            account_count=len(account_rows)
-        )
+        except ValidationError as error:
+            flash(str(error), "danger")
 
-    # Read and clean the submitted account details.
-    name = (request.form.get("account_name") or "").strip()
-    account_type = (request.form.get("account_type") or "").strip()
-    bank = (request.form.get("bank") or "").strip() or None
+        return redirect(accounts_url)
 
-    # Require the name field as the type will be inforced later and the bank is optional
-    if not name:
-        flash("Account name is required.", "danger")
-        return redirect("/accounts")
+    (
+        account_rows,
+        total_income,
+        total_expenses,
+        total_balance
+    ) = load_accounts(db, user_id, active_value)
 
-    # Store the account under the currently signed-in user.
-    try:
-        db.execute(
-            "INSERT INTO accounts (user_id, name, type, bank) VALUES (?, ?, ?, ?)",
-            session["user_id"],
-            name,
-            account_type,
-            bank
-        )
-    except ValueError:
-        # Handle a database type-constraint failure without showing a server error.
-        flash("Please select a valid account type.", "danger")
-        return redirect("/accounts")
-
-    # Confirm the insert after redirecting back to the Accounts page.
-    flash("Account added successfully.", "success")
-    return redirect("/accounts")
-
-@app.route("/settings")
-def settings():
-    return render_template("settings.html")
+    return render_template(
+        "accounts.html",
+        accounts=account_rows,
+        total_income=total_income,
+        total_expenses=total_expenses,
+        total_balance=total_balance,
+        account_count=len(account_rows),
+        show_inactive=show_inactive,
+        accounts_url=accounts_url,
+        account_filter_url=account_filter_url
+    )
