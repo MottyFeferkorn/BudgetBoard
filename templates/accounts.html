@@ -271,48 +271,6 @@
                                 </div>
                             {% endif %}
 
-                            <div
-                                class="modal fade"
-                                id="{{ status_modal_id }}"
-                                tabindex="-1"
-                                aria-labelledby="{{ status_modal_id }}Label"
-                                aria-hidden="true"
-                            >
-                                <div class="modal-dialog modal-dialog-centered">
-                                    <div class="modal-content account-modal-content">
-                                        <div class="modal-header border-0 px-4 pt-4 pb-2">
-                                            <div>
-                                                <h2 class="modal-title h5 fw-bold" id="{{ status_modal_id }}Label">
-                                                    {{ "Activate" if show_inactive else "Deactivate" }} account?
-                                                </h2>
-                                                <p class="text-secondary small mb-0">
-                                                    {% if show_inactive %}
-                                                        This account will be available for new transactions again.
-                                                    {% else %}
-                                                        Existing income and expenses will remain safely attached.
-                                                    {% endif %}
-                                                </p>
-                                            </div>
-                                            <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button>
-                                        </div>
-                                        <div class="modal-body px-4 py-3">
-                                            Are you sure you want to {{ "activate" if show_inactive else "deactivate" }}
-                                            <strong>{{ account["name"] }}</strong>?
-                                        </div>
-                                        <div class="modal-footer border-0 px-4 pt-0 pb-4">
-                                            <button class="btn btn-light" type="button" data-bs-dismiss="modal">Cancel</button>
-                                            <form action="{{ accounts_url }}" method="post">
-                                                <input name="action" type="hidden" value="set_account_active">
-                                                <input name="account_id" type="hidden" value="{{ account['id'] }}">
-                                                <input name="active" type="hidden" value="{{ 1 if show_inactive else 0 }}">
-                                                <button class="btn {{ 'btn-primary' if show_inactive else 'btn-danger' }}" type="submit">
-                                                    {{ "Activate account" if show_inactive else "Deactivate account" }}
-                                                </button>
-                                            </form>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
                         </article>
                     </div>
                 {% else %}
@@ -345,6 +303,52 @@
             </div>
         </div>
     </section>
+
+    {% for account in accounts %}
+        {% set status_modal_id = "accountStatusModal-" ~ account["id"] %}
+        <div
+            class="modal fade"
+            id="{{ status_modal_id }}"
+            tabindex="-1"
+            aria-labelledby="{{ status_modal_id }}Label"
+            aria-hidden="true"
+        >
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content account-modal-content">
+                    <div class="modal-header border-0 px-4 pt-4 pb-2">
+                        <div>
+                            <h2 class="modal-title h5 fw-bold" id="{{ status_modal_id }}Label">
+                                {{ "Activate" if show_inactive else "Deactivate" }} account?
+                            </h2>
+                            <p class="text-secondary small mb-0">
+                                {% if show_inactive %}
+                                    This account will be available for new transactions again.
+                                {% else %}
+                                    Existing income and expenses will remain safely attached.
+                                {% endif %}
+                            </p>
+                        </div>
+                        <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body px-4 py-3">
+                        Are you sure you want to {{ "activate" if show_inactive else "deactivate" }}
+                        <strong>{{ account["name"] }}</strong>?
+                    </div>
+                    <div class="modal-footer border-0 px-4 pt-0 pb-4">
+                        <button class="btn btn-light" type="button" data-bs-dismiss="modal">Cancel</button>
+                        <form action="{{ accounts_url }}" method="post">
+                            <input name="action" type="hidden" value="set_account_active">
+                            <input name="account_id" type="hidden" value="{{ account['id'] }}">
+                            <input name="active" type="hidden" value="{{ 1 if show_inactive else 0 }}">
+                            <button class="btn {{ 'btn-primary' if show_inactive else 'btn-danger' }}" type="submit">
+                                {{ "Activate account" if show_inactive else "Deactivate account" }}
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endfor %}
 
     {% if not show_inactive %}
         <div class="modal fade" id="addAccountModal" tabindex="-1" aria-labelledby="addAccountModalLabel" aria-hidden="true">
