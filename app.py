@@ -1,12 +1,33 @@
 import re
+from datetime import date
 
 from cs50 import SQL
-from flask import Flask, flash, redirect, render_template, request, session
+from flask import Flask, flash, redirect, render_template, request, session, url_for
 from flask_session import Session
 from werkzeug.middleware.proxy_fix import ProxyFix
 from werkzeug.security import check_password_hash, generate_password_hash
 
-from helpers import login_required, transaction_page, usd
+from helpers import (
+    ValidationError,
+    add_budget_plan_item,
+    change_plan_item_category,
+    create_budget_plan,
+    get_budget_plan,
+    get_or_create_category,
+    load_budget_plan_items,
+    load_saved_plan_months,
+    load_user_categories,
+    login_required,
+    organize_plan_items,
+    parse_plan_month,
+    parse_record_id,
+    remove_budget_plan_item,
+    shift_plan_month,
+    transaction_page,
+    update_budget_plan_item,
+    usd,
+    validate_plan_amount
+)
 
 # Configure application
 app = Flask(__name__)
@@ -153,9 +174,192 @@ def logout():
     session.clear()
     return redirect("/")
 
-@app.route("/plan")
+
+@app.route("/plan", methods=["GET", "POST"])
+@login_required
 def plan():
-    return render_template("plan.html")
+    """Display and update the signed-in user's monthly budget plan."""
+    user_id = session["user_id"]
+
+    if request.method == "POST":
+        action = (request.form.get("action") or "").strip()
+
+        try:
+            submitted_month = parse_plan_month(
+                request.form.get("month")
+            )
+        except ValidationError as error:
+            flash(str(error), "danger")
+            return redirect(url_for("plan"))
+
+        database_month = submitted_month.isoformat()
+        redirect_month = submitted_month.strftime("%Y-%m")
+
+        try:
+            if action == "create_plan":
+                start_mode = (
+                    request.form.get("start_mode") or ""
+                ).strip()
+
+                _, copied_previous = create_budget_plan(
+                    db,
+                    user_id,
+                    submitted_month,
+                    start_mode
+                )
+
+                if start_mode == "copy_previous" and copied_previous:
+                    flash(
+                        "Plan created from the previous month's plan.",
+                        "success"
+                    )
+                elif start_mode == "copy_previous":
+                    flash(
+                        "Plan created. No previous plan was available, "
+                        "so it was started blank.",
+                        "success"
+                    )
+                else:
+                    flash("Blank plan created.", "success")
+
+            elif action == "add_category":
+                selected_plan = get_budget_plan(
+                    db,
+                    user_id,
+                    database_month
+                )
+
+                if not selected_plan:
+                    raise ValidationError(
+                        "Create this month's plan before adding categories."
+                    )
+
+                amount = validate_plan_amount(
+                    request.form.get("amount")
+                )
+                category_id = get_or_create_category(
+                    db,
+                    user_id,
+                    request.form.get("category_name"),
+                    request.form.get("category_type")
+                )
+
+                add_budget_plan_item(
+                    db,
+                    user_id,
+                    selected_plan["id"],
+                    category_id,
+                    amount
+                )
+
+                flash("Category added to this plan.", "success")
+
+            elif action == "update_amount":
+                item_id = parse_record_id(
+                    request.form.get("item_id"),
+                    "plan category"
+                )
+                amount = validate_plan_amount(
+                    request.form.get("amount")
+                )
+
+                update_budget_plan_item(
+                    db,
+                    user_id,
+                    item_id,
+                    amount
+                )
+
+                flash("Planned amount updated.", "success")
+
+            elif action == "remove_item":
+                item_id = parse_record_id(
+                    request.form.get("item_id"),
+                    "plan category"
+                )
+
+                remove_budget_plan_item(db, user_id, item_id)
+
+                flash(
+                    "Category removed from this month's plan. "
+                    "It is still available elsewhere.",
+                    "success"
+                )
+
+            elif action == "change_item_category":
+                item_id = parse_record_id(
+                    request.form.get("item_id"),
+                    "plan category"
+                )
+
+                change_plan_item_category(
+                    db,
+                    user_id,
+                    item_id,
+                    request.form.get("category_name")
+                )
+
+                flash(
+                    "Category changed for this month's plan.",
+                    "success"
+                )
+
+            else:
+                raise ValidationError("Choose a valid plan action.")
+
+        except ValidationError as error:
+            flash(str(error), "danger")
+
+        return redirect(
+            url_for("plan", month=redirect_month)
+        )
+
+    requested_month = request.args.get("month")
+
+    if requested_month is None:
+        selected_month = date.today().replace(day=1)
+    else:
+        try:
+            selected_month = parse_plan_month(requested_month)
+        except ValidationError as error:
+            flash(str(error), "danger")
+            return redirect(url_for("plan"))
+
+    database_month = selected_month.isoformat()
+    selected_plan = get_budget_plan(db, user_id, database_month)
+
+    if selected_plan:
+        plan_items = load_budget_plan_items(
+            db,
+            user_id,
+            selected_plan["id"]
+        )
+    else:
+        plan_items = []
+
+    plan_data = organize_plan_items(plan_items)
+    previous_month = shift_plan_month(selected_month, -1)
+    next_month = shift_plan_month(selected_month, 1)
+
+    return render_template(
+        "plan.html",
+        selected_month=selected_month,
+        selected_month_label=selected_month.strftime("%B"),
+        selected_month_value=selected_month.strftime("%Y-%m"),
+        previous_month_label=previous_month.strftime("%B"),
+        previous_month_value=previous_month.strftime("%Y-%m"),
+        next_month_label=next_month.strftime("%B"),
+        next_month_value=next_month.strftime("%Y-%m"),
+        plan=selected_plan,
+        plan_exists=selected_plan is not None,
+        saved_months=load_saved_plan_months(db, user_id),
+        income_plan=plan_data["income_items"],
+        expense_plan=plan_data["expense_items"],
+        planned_income=plan_data["planned_income"],
+        planned_expenses=plan_data["planned_expenses"],
+        planned_remaining=plan_data["planned_remaining"],
+        categories=load_user_categories(db, user_id)
+    )
 
 @app.route("/income", defaults={"limit": "10"}, methods=["GET", "POST"])
 @app.route("/income/<limit>", methods=["GET", "POST"])

@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
 from functools import wraps
 from urllib.parse import urlencode
@@ -25,6 +25,566 @@ def login_required(f):
 def usd(value):
     """Format value as USD."""
     return f"${value:,.2f}"
+
+
+class ValidationError(Exception):
+    """Represent invalid application input with a user-facing message."""
+
+
+def validate_category_name(value):
+    """Clean and validate a reusable category name."""
+    category_name = (value or "").strip()
+
+    if not category_name:
+        raise ValidationError("Category name is required.")
+
+    if len(category_name) > 50:
+        raise ValidationError(
+            "Category name must be 50 characters or fewer."
+        )
+
+    return category_name
+
+
+def get_or_create_category(
+    db,
+    user_id,
+    category_name,
+    category_type
+):
+    """Return a matching category ID or create the category."""
+    category_name = validate_category_name(category_name)
+    category_type = (category_type or "").strip().lower()
+
+    rows = db.execute(
+        """
+        SELECT id
+        FROM categories
+        WHERE user_id = ?
+          AND type = ?
+          AND name = ? COLLATE NOCASE
+        LIMIT 1
+        """,
+        user_id,
+        category_type,
+        category_name
+    )
+
+    if rows:
+        return rows[0]["id"]
+
+    try:
+        return db.execute(
+            """
+            INSERT INTO categories (user_id, name, type)
+            VALUES (?, ?, ?)
+            """,
+            user_id,
+            category_name,
+            category_type
+        )
+    except ValueError as error:
+        # A simultaneous request may have inserted the same category first.
+        rows = db.execute(
+            """
+            SELECT id
+            FROM categories
+            WHERE user_id = ?
+              AND type = ?
+              AND name = ? COLLATE NOCASE
+            LIMIT 1
+            """,
+            user_id,
+            category_type,
+            category_name
+        )
+
+        if rows:
+            return rows[0]["id"]
+
+        # The schema also rejects category types other than income or expense.
+        raise ValidationError("Choose a valid category type.") from error
+
+
+def rename_category(db, user_id, category_id, new_name):
+    """Rename one of a user's categories everywhere it is used."""
+    new_name = validate_category_name(new_name)
+
+    owned_category = db.execute(
+        """
+        SELECT id
+        FROM categories
+        WHERE id = ?
+          AND user_id = ?
+        LIMIT 1
+        """,
+        category_id,
+        user_id
+    )
+
+    if not owned_category:
+        raise ValidationError("Category not found.")
+
+    try:
+        db.execute(
+            """
+            UPDATE categories
+            SET name = ?
+            WHERE id = ?
+              AND user_id = ?
+            """,
+            new_name,
+            category_id,
+            user_id
+        )
+    except ValueError as error:
+        raise ValidationError(
+            "A category with that name already exists."
+        ) from error
+
+
+def parse_plan_month(value):
+    """Convert an HTML YYYY-MM value to the first day of that month."""
+    value = (value or "").strip()
+
+    try:
+        selected_month = datetime.strptime(value, "%Y-%m").date()
+    except ValueError as error:
+        raise ValidationError("Choose a valid month.") from error
+
+    return selected_month.replace(day=1)
+
+
+def shift_plan_month(selected_month, offset):
+    """Move a first-of-month date backward or forward by whole months."""
+    month_index = (
+        selected_month.year * 12
+        + selected_month.month
+        - 1
+        + offset
+    )
+    year, zero_based_month = divmod(month_index, 12)
+
+    return date(year, zero_based_month + 1, 1)
+
+
+def validate_plan_amount(value):
+    """Return a non-negative planned amount with at most two decimals."""
+    value = (value or "").strip()
+
+    try:
+        amount = Decimal(value)
+        cents_amount = amount.quantize(Decimal("0.01"))
+    except (InvalidOperation, ValueError) as error:
+        raise ValidationError("Enter a valid planned amount.") from error
+
+    if not amount.is_finite():
+        raise ValidationError("Enter a valid planned amount.")
+
+    if amount < 0:
+        raise ValidationError("The planned amount cannot be negative.")
+
+    if amount != cents_amount:
+        raise ValidationError("Use no more than two decimal places.")
+
+    return cents_amount
+
+
+def parse_record_id(value, label):
+    """Convert a submitted database ID to a positive integer."""
+    try:
+        record_id = int(value)
+    except (TypeError, ValueError) as error:
+        raise ValidationError(f"Choose a valid {label}.") from error
+
+    if record_id <= 0:
+        raise ValidationError(f"Choose a valid {label}.")
+
+    return record_id
+
+
+def get_budget_plan(db, user_id, database_month):
+    """Find one of the current user's saved monthly plans."""
+    rows = db.execute(
+        """
+        SELECT id, user_id, month, created_at
+        FROM budget_plans
+        WHERE user_id = ?
+          AND month = ?
+        LIMIT 1
+        """,
+        user_id,
+        database_month
+    )
+
+    return rows[0] if rows else None
+
+
+def get_previous_budget_plan(db, user_id, database_month):
+    """Find the user's latest saved plan before a target month."""
+    rows = db.execute(
+        """
+        SELECT id, month
+        FROM budget_plans
+        WHERE user_id = ?
+          AND month < ?
+        ORDER BY month DESC
+        LIMIT 1
+        """,
+        user_id,
+        database_month
+    )
+
+    return rows[0] if rows else None
+
+
+def create_budget_plan(db, user_id, selected_month, start_mode):
+    """Create a blank monthly plan or copy the latest earlier plan."""
+    valid_start_modes = {"blank", "copy_previous"}
+
+    if start_mode not in valid_start_modes:
+        raise ValidationError("Choose how the new plan should begin.")
+
+    database_month = selected_month.isoformat()
+
+    if get_budget_plan(db, user_id, database_month):
+        raise ValidationError(
+            f"A plan for {selected_month.strftime('%B')} already exists."
+        )
+
+    try:
+        new_plan_id = db.execute(
+            """
+            INSERT INTO budget_plans (user_id, month)
+            VALUES (?, ?)
+            """,
+            user_id,
+            database_month
+        )
+    except ValueError as error:
+        raise ValidationError(
+            f"A plan for {selected_month.strftime('%B')} already exists."
+        ) from error
+
+    copied_previous_plan = False
+
+    if start_mode == "copy_previous":
+        previous_plan = get_previous_budget_plan(
+            db,
+            user_id,
+            database_month
+        )
+
+        if previous_plan:
+            db.execute(
+                """
+                INSERT INTO budget_plan_items (
+                    plan_id,
+                    category_id,
+                    amount
+                )
+                SELECT
+                    ?,
+                    category_id,
+                    amount
+                FROM budget_plan_items
+                WHERE plan_id = ?
+                """,
+                new_plan_id,
+                previous_plan["id"]
+            )
+            copied_previous_plan = True
+
+    return new_plan_id, copied_previous_plan
+
+
+def load_saved_plan_months(db, user_id):
+    """Load the months that have saved plan headers."""
+    rows = db.execute(
+        """
+        SELECT id, month
+        FROM budget_plans
+        WHERE user_id = ?
+        ORDER BY month DESC
+        """,
+        user_id
+    )
+
+    saved_months = []
+
+    for row in rows:
+        month_date = datetime.strptime(row["month"], "%Y-%m-%d").date()
+        saved_months.append({
+            "id": row["id"],
+            "value": month_date.strftime("%Y-%m"),
+            "label": month_date.strftime("%B")
+        })
+
+    return saved_months
+
+
+def load_user_categories(db, user_id):
+    """Load category names for future Plan form suggestions."""
+    return db.execute(
+        """
+        SELECT id, name, type
+        FROM categories
+        WHERE user_id = ?
+        ORDER BY type, name
+        """,
+        user_id
+    )
+
+
+def load_budget_plan_items(db, user_id, plan_id):
+    """Load the category allocations in one of the user's plans."""
+    return db.execute(
+        """
+        SELECT
+            budget_plan_items.id,
+            budget_plan_items.category_id,
+            budget_plan_items.amount,
+            categories.name AS category_name,
+            categories.type AS category_type
+        FROM budget_plan_items
+
+        JOIN budget_plans
+            ON budget_plans.id = budget_plan_items.plan_id
+
+        JOIN categories
+            ON categories.id = budget_plan_items.category_id
+            AND categories.user_id = budget_plans.user_id
+
+        WHERE budget_plan_items.plan_id = ?
+          AND budget_plans.user_id = ?
+
+        ORDER BY
+            CASE categories.type
+                WHEN 'income' THEN 1
+                ELSE 2
+            END,
+            categories.name
+        """,
+        plan_id,
+        user_id
+    )
+
+
+def get_owned_plan_item(db, user_id, item_id):
+    """Find a plan item only when its plan belongs to the current user."""
+    rows = db.execute(
+        """
+        SELECT
+            budget_plan_items.id,
+            budget_plan_items.plan_id,
+            budget_plan_items.category_id,
+            budget_plan_items.amount,
+            categories.type AS category_type
+        FROM budget_plan_items
+
+        JOIN budget_plans
+            ON budget_plans.id = budget_plan_items.plan_id
+
+        JOIN categories
+            ON categories.id = budget_plan_items.category_id
+            AND categories.user_id = budget_plans.user_id
+
+        WHERE budget_plan_items.id = ?
+          AND budget_plans.user_id = ?
+        LIMIT 1
+        """,
+        item_id,
+        user_id
+    )
+
+    return rows[0] if rows else None
+
+
+def add_budget_plan_item(
+    db,
+    user_id,
+    plan_id,
+    category_id,
+    amount
+):
+    """Add one category allocation to an owned monthly plan."""
+    owned_plan = db.execute(
+        """
+        SELECT id
+        FROM budget_plans
+        WHERE id = ?
+          AND user_id = ?
+        LIMIT 1
+        """,
+        plan_id,
+        user_id
+    )
+
+    if not owned_plan:
+        raise ValidationError("Plan not found.")
+
+    owned_category = db.execute(
+        """
+        SELECT id
+        FROM categories
+        WHERE id = ?
+          AND user_id = ?
+        LIMIT 1
+        """,
+        category_id,
+        user_id
+    )
+
+    if not owned_category:
+        raise ValidationError("Category not found.")
+
+    existing_item = db.execute(
+        """
+        SELECT id
+        FROM budget_plan_items
+        WHERE plan_id = ?
+          AND category_id = ?
+        LIMIT 1
+        """,
+        plan_id,
+        category_id
+    )
+
+    if existing_item:
+        raise ValidationError(
+            "That category is already included in this plan."
+        )
+
+    try:
+        return db.execute(
+            """
+            INSERT INTO budget_plan_items (
+                plan_id,
+                category_id,
+                amount
+            )
+            VALUES (?, ?, ?)
+            """,
+            plan_id,
+            category_id,
+            float(amount)
+        )
+    except ValueError as error:
+        raise ValidationError(
+            "That category is already included in this plan."
+        ) from error
+
+
+def update_budget_plan_item(db, user_id, item_id, amount):
+    """Update a directly editable amount on an owned plan item."""
+    if not get_owned_plan_item(db, user_id, item_id):
+        raise ValidationError("Plan category not found.")
+
+    db.execute(
+        """
+        UPDATE budget_plan_items
+        SET amount = ?
+        WHERE id = ?
+        """,
+        float(amount),
+        item_id
+    )
+
+
+def remove_budget_plan_item(db, user_id, item_id):
+    """Remove an item from one plan without deleting its category."""
+    if not get_owned_plan_item(db, user_id, item_id):
+        raise ValidationError("Plan category not found.")
+
+    db.execute(
+        """
+        DELETE FROM budget_plan_items
+        WHERE id = ?
+        """,
+        item_id
+    )
+
+
+def change_plan_item_category(
+    db,
+    user_id,
+    item_id,
+    new_category_name
+):
+    """Change the category used by one month without a global rename."""
+    item = get_owned_plan_item(db, user_id, item_id)
+
+    if not item:
+        raise ValidationError("Plan category not found.")
+
+    new_category_id = get_or_create_category(
+        db,
+        user_id,
+        new_category_name,
+        item["category_type"]
+    )
+
+    existing_item = db.execute(
+        """
+        SELECT id
+        FROM budget_plan_items
+        WHERE plan_id = ?
+          AND category_id = ?
+          AND id != ?
+        LIMIT 1
+        """,
+        item["plan_id"],
+        new_category_id,
+        item_id
+    )
+
+    if existing_item:
+        raise ValidationError(
+            "That category is already included in this month's plan."
+        )
+
+    try:
+        db.execute(
+            """
+            UPDATE budget_plan_items
+            SET category_id = ?
+            WHERE id = ?
+            """,
+            new_category_id,
+            item_id
+        )
+    except ValueError as error:
+        raise ValidationError(
+            "That category is already included in this month's plan."
+        ) from error
+
+
+def organize_plan_items(plan_items):
+    """Split items by type and calculate the three Plan summaries."""
+    income_items = []
+    expense_items = []
+    planned_income = Decimal("0.00")
+    planned_expenses = Decimal("0.00")
+
+    for item in plan_items:
+        item_amount = Decimal(str(item["amount"])).quantize(
+            Decimal("0.01")
+        )
+
+        if item["category_type"] == "income":
+            income_items.append(item)
+            planned_income += item_amount
+        else:
+            expense_items.append(item)
+            planned_expenses += item_amount
+
+    return {
+        "income_items": income_items,
+        "expense_items": expense_items,
+        "planned_income": planned_income,
+        "planned_expenses": planned_expenses,
+        "planned_remaining": planned_income - planned_expenses
+    }
 
 
 def transaction_page(db, transaction_table, limit):
