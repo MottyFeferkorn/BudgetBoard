@@ -173,24 +173,105 @@
     font-weight: 600;
 }
 
-.plan-category-actions {
+.plan-category-view-end {
     display: flex;
     align-items: center;
-    gap: 0.55rem;
+    justify-content: flex-end;
+    gap: 0.75rem;
 }
 
-.plan-amount-form {
+.plan-category-amount {
+    min-width: 7.5rem;
+    text-align: right;
+    font-weight: 700;
+}
+
+.plan-category-edit-button,
+.plan-category-delete-button {
+    display: grid;
+    width: 2.65rem;
+    height: 2.65rem;
+    flex: 0 0 2.65rem;
+    padding: 0;
+    place-items: center;
+    border-radius: 0.7rem;
+}
+
+.plan-category-edit-button {
+    color: #6c757d;
+    opacity: 0;
+    transform: translateX(0.3rem);
+    transition:
+        opacity 0.15s ease,
+        transform 0.15s ease,
+        background-color 0.15s ease,
+        color 0.15s ease;
+}
+
+.plan-category-view:hover .plan-category-edit-button,
+.plan-category-edit-button:focus-visible {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.plan-category-edit-button:hover,
+.plan-category-edit-button:focus {
+    background-color: #f1f3f5;
+    color: #0d6efd;
+}
+
+.plan-category-delete-button {
+    color: #dc3545;
+}
+
+.plan-category-delete-button:hover,
+.plan-category-delete-button:focus {
+    background-color: #fff1f2;
+    color: #b02a37;
+}
+
+.plan-category-edit-form {
+    display: grid;
+    min-width: 0;
+    flex: 1 1 auto;
+    grid-template-columns: minmax(10rem, 1fr) auto;
+    align-items: center;
+    gap: 1rem;
+}
+
+.plan-category-name-field .form-control,
+.plan-category-edit-controls .btn {
+    min-height: 2.65rem;
+    border-radius: 0.7rem;
+}
+
+.plan-category-name-field .form-control {
+    border-color: #dee2e6;
+    font-weight: 600;
+}
+
+.plan-category-edit-controls {
     display: flex;
     align-items: center;
     gap: 0.5rem;
 }
 
-.plan-amount-input {
-    width: 12rem;
+.plan-category-edit-controls .btn {
+    padding-right: 1rem;
+    padding-left: 1rem;
+    font-weight: 600;
 }
 
-.plan-amount-save {
-    min-height: 2.65rem;
+.plan-amount-input {
+    width: 11rem;
+}
+
+.plan-edit-cancel {
+    border-color: #e9ecef;
+}
+
+.plan-edit-save {
+    min-width: 4.75rem;
     border-radius: 0.7rem;
     font-weight: 600;
 }
@@ -216,43 +297,6 @@
 .plan-amount-input .form-control:focus {
     position: relative;
     z-index: 3;
-}
-
-.plan-category-menu {
-    display: grid;
-    width: 2.65rem;
-    height: 2.65rem;
-    padding: 0;
-    place-items: center;
-    border-radius: 0.7rem;
-    color: #6c757d;
-}
-
-.plan-category-menu:hover,
-.plan-category-menu:focus,
-.plan-category-menu.show {
-    background-color: #f1f3f5;
-    color: #212529;
-}
-
-.plan-category-dropdown {
-    width: 17rem;
-    padding: 0.5rem;
-    border: 1px solid rgba(33, 37, 41, 0.08);
-    border-radius: 0.85rem;
-}
-
-.plan-category-dropdown .dropdown-item {
-    padding: 0.55rem 0.7rem;
-    border-radius: 0.55rem;
-    font-size: 0.9rem;
-}
-
-.plan-category-dropdown .dropdown-helper {
-    padding: 0.45rem 0.7rem 0.2rem;
-    color: #6c757d;
-    font-size: 0.75rem;
-    line-height: 1.35;
 }
 
 .plan-empty-state {
@@ -374,19 +418,38 @@
     }
 
     .plan-category-row {
-        align-items: flex-start;
-        flex-direction: column;
-        gap: 0.6rem;
         padding: 1rem;
     }
 
-    .plan-category-actions {
-        width: 100%;
+    .plan-category-view {
+        align-items: center;
+        flex-direction: row;
     }
 
-    .plan-amount-form {
+    .plan-category-view-end {
+        margin-left: auto;
+    }
+
+    .plan-category-edit-button {
+        opacity: 1;
+        transform: none;
+    }
+
+    .plan-category-edit {
+        align-items: flex-start;
+        flex-direction: row;
+        gap: 0.5rem;
+    }
+
+    .plan-category-edit-form {
+        width: 100%;
         min-width: 0;
-        flex: 1 1 auto;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 0.6rem;
+    }
+
+    .plan-category-edit-controls {
+        width: 100%;
     }
 
     .plan-amount-input {
@@ -395,8 +458,9 @@
         flex: 1 1 auto;
     }
 
-    .plan-category-actions .dropdown {
-        flex: 0 0 auto;
+    .plan-category-edit-controls .btn {
+        padding-right: 0.75rem;
+        padding-left: 0.75rem;
     }
 
     .plan-tabs {

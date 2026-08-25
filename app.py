@@ -254,6 +254,30 @@ def plan():
 
                 flash("Category added to this plan.", "success")
 
+            elif action == "update_item":
+                item_id = parse_record_id(
+                    request.form.get("item_id"),
+                    "plan category"
+                )
+                amount = validate_plan_amount(
+                    request.form.get("amount")
+                )
+
+                change_plan_item_category(
+                    db,
+                    user_id,
+                    item_id,
+                    request.form.get("category_name")
+                )
+                update_budget_plan_item(
+                    db,
+                    user_id,
+                    item_id,
+                    amount
+                )
+
+                flash("Plan item updated.", "success")
+
             elif action == "update_amount":
                 item_id = parse_record_id(
                     request.form.get("item_id"),
