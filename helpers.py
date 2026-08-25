@@ -3,7 +3,7 @@ from decimal import Decimal, InvalidOperation
 from functools import wraps
 from urllib.parse import urlencode
 
-from flask import redirect, render_template, request, session, url_for
+from flask import flash, redirect, render_template, request, session, url_for
 
 
 def login_required(f):
@@ -587,48 +587,286 @@ def organize_plan_items(plan_items):
     }
 
 
-def transaction_page(db, transaction_table, limit):
-    """Handle the shared Income and Expenses page behavior."""
-
-    # Only these trusted settings may become SQL identifiers or template names.
+def get_transaction_settings(transaction_table):
+    """Return trusted display and SQL settings for a transaction page."""
     transaction_settings = {
         "income": {
+            "table": "income",
             "category_type": "income",
             "endpoint": "income",
             "label": "Income",
-            "template": "income.html"
+            "template": "income.html",
+            "amount_class": "text-success",
+            "empty_message": "No income has been recorded yet."
         },
         "expenses": {
+            "table": "expenses",
             "category_type": "expense",
             "endpoint": "expenses",
             "label": "Expense",
-            "template": "expenses.html"
+            "template": "expenses.html",
+            "amount_class": "text-danger",
+            "empty_message": "No expenses have been recorded yet."
         }
     }
 
-    if transaction_table not in transaction_settings:
-        raise ValueError("Unsupported transaction table.")
+    try:
+        return transaction_settings[transaction_table]
+    except KeyError as error:
+        raise ValueError("Unsupported transaction table.") from error
 
-    settings = transaction_settings[transaction_table]
+
+def parse_transaction_limit(value):
+    """Return one of the supported transaction preview sizes."""
+    if value == "all":
+        return None
+
+    try:
+        page_limit = int(value)
+    except (TypeError, ValueError):
+        return 10
+
+    return page_limit if page_limit in (10, 25, 50) else 10
+
+
+def validate_transaction_amount(value):
+    """Return a positive transaction amount with at most two decimals."""
+    try:
+        amount = validate_plan_amount(value)
+    except ValidationError as error:
+        raise ValidationError(
+            "Enter an amount greater than zero with no more than "
+            "two decimal places."
+        ) from error
+
+    if amount == 0:
+        raise ValidationError(
+            "Enter an amount greater than zero with no more than "
+            "two decimal places."
+        )
+
+    return amount
+
+
+def validate_transaction_description(value):
+    """Clean an optional transaction description."""
+    description = (value or "").strip()
+
+    if len(description) > 150:
+        raise ValidationError(
+            "Description must be 150 characters or fewer."
+        )
+
+    return description or None
+
+
+def validate_transaction_date(value):
+    """Validate an HTML date and return SQLite's date representation."""
+    try:
+        return datetime.strptime(
+            (value or "").strip(),
+            "%Y-%m-%d"
+        ).date().isoformat()
+    except ValueError as error:
+        raise ValidationError("Select a valid date.") from error
+
+
+def validate_transaction_account(db, user_id, value):
+    """Return an account ID only when the account belongs to the user."""
+    account_id = parse_record_id(value, "account")
+    account = db.execute(
+        """
+        SELECT id
+        FROM accounts
+        WHERE id = ?
+          AND user_id = ?
+        LIMIT 1
+        """,
+        account_id,
+        user_id
+    )
+
+    if not account:
+        raise ValidationError("Select a valid account.")
+
+    return account_id
+
+
+def validate_transaction_fields(db, user_id, submitted_form):
+    """Validate shared add/edit fields and retain safe form values."""
+    form_data = {
+        "amount": (submitted_form.get("amount") or "").strip(),
+        "category": (submitted_form.get("category") or "").strip(),
+        "description": (
+            submitted_form.get("description") or ""
+        ).strip(),
+        "account_id": (
+            submitted_form.get("account_id") or ""
+        ).strip(),
+        "date": (submitted_form.get("date") or "").strip()
+    }
+    errors = {}
+    transaction_data = {}
+
+    validators = {
+        "amount": lambda: validate_transaction_amount(
+            form_data["amount"]
+        ),
+        "category": lambda: validate_category_name(
+            form_data["category"]
+        ),
+        "description": lambda: validate_transaction_description(
+            form_data["description"]
+        ),
+        "account_id": lambda: validate_transaction_account(
+            db,
+            user_id,
+            form_data["account_id"]
+        ),
+        "date": lambda: validate_transaction_date(form_data["date"])
+    }
+
+    for field, validator in validators.items():
+        try:
+            transaction_data[field] = validator()
+        except ValidationError as error:
+            errors[field] = str(error)
+
+    return transaction_data, form_data, errors
+
+
+def get_owned_transaction(db, transaction_table, user_id, transaction_id):
+    """Find a transaction only in the requested user's transaction table."""
+    table = get_transaction_settings(transaction_table)["table"]
+    rows = db.execute(
+        f"""
+        SELECT id, user_id, amount, category_id, description, account_id, date
+        FROM {table}
+        WHERE id = ?
+          AND user_id = ?
+        LIMIT 1
+        """,
+        transaction_id,
+        user_id
+    )
+
+    if not rows:
+        raise ValidationError("Transaction not found.")
+
+    return rows[0]
+
+
+def create_transaction(db, transaction_table, user_id, transaction_data):
+    """Insert a validated income or expense transaction."""
+    table = get_transaction_settings(transaction_table)["table"]
+    return db.execute(
+        f"""
+        INSERT INTO {table} (
+            user_id,
+            amount,
+            category_id,
+            description,
+            account_id,
+            date
+        )
+        VALUES (?, ?, ?, ?, ?, ?)
+        """,
+        user_id,
+        float(transaction_data["amount"]),
+        transaction_data["category_id"],
+        transaction_data["description"],
+        transaction_data["account_id"],
+        transaction_data["date"]
+    )
+
+
+def update_transaction(
+    db,
+    transaction_table,
+    user_id,
+    transaction_id,
+    transaction_data
+):
+    """Update one owned transaction without changing a category record."""
+    table = get_transaction_settings(transaction_table)["table"]
+    get_owned_transaction(
+        db,
+        transaction_table,
+        user_id,
+        transaction_id
+    )
+    db.execute(
+        f"""
+        UPDATE {table}
+        SET amount = ?,
+            category_id = ?,
+            description = ?,
+            account_id = ?,
+            date = ?
+        WHERE id = ?
+          AND user_id = ?
+        """,
+        float(transaction_data["amount"]),
+        transaction_data["category_id"],
+        transaction_data["description"],
+        transaction_data["account_id"],
+        transaction_data["date"],
+        transaction_id,
+        user_id
+    )
+
+
+def delete_transaction(db, transaction_table, user_id, transaction_id):
+    """Delete one owned transaction while leaving its category intact."""
+    table = get_transaction_settings(transaction_table)["table"]
+    get_owned_transaction(
+        db,
+        transaction_table,
+        user_id,
+        transaction_id
+    )
+    db.execute(
+        f"""
+        DELETE FROM {table}
+        WHERE id = ?
+          AND user_id = ?
+        """,
+        transaction_id,
+        user_id
+    )
+
+
+def build_transaction_page_url(endpoint, current_limit, query_arguments):
+    """Build an absolute page URL while retaining active filters."""
+    arguments = query_arguments.to_dict(flat=False)
+    arguments.pop("added", None)
+    query = urlencode(arguments, doseq=True)
+    path = url_for(
+        endpoint,
+        limit=current_limit,
+        _external=True
+    )
+
+    return f"{path}?{query}" if query else path
+
+
+def transaction_page(db, transaction_table, limit):
+    """Handle the shared Income and Expenses page behavior."""
+    settings = get_transaction_settings(transaction_table)
+    table = settings["table"]
     category_type = settings["category_type"]
     endpoint = settings["endpoint"]
     label = settings["label"]
     user_id = session["user_id"]
+    page_limit = parse_transaction_limit(limit)
+    show_all = page_limit is None
+    current_limit = "all" if show_all else page_limit
+    transaction_page_url = build_transaction_page_url(
+        endpoint,
+        current_limit,
+        request.args
+    )
 
-    # Support three preview sizes followed by an unpaginated final view.
-    show_all = limit == "all"
-
-    if show_all:
-        page_limit = None
-    else:
-        try:
-            page_limit = int(limit)
-            if page_limit not in (10, 25, 50):
-                raise ValueError
-        except (TypeError, ValueError):
-            page_limit = 10
-
-    # Both normal requests and invalid submissions need these form choices.
     accounts = db.execute(
         "SELECT id, name FROM accounts WHERE user_id = ? ORDER BY name",
         user_id
@@ -637,146 +875,108 @@ def transaction_page(db, transaction_table, limit):
         """
         SELECT id, name
         FROM categories
-        WHERE user_id = ? AND type = ?
+        WHERE user_id = ?
+          AND type = ?
         ORDER BY name
         """,
         user_id,
         category_type
     )
-
-    account_ids = {account["id"] for account in accounts}
     errors = {}
+    form_data = {
+        "amount": "",
+        "category": "",
+        "description": "",
+        "account_id": "",
+        "date": datetime.now().strftime("%Y-%m-%d")
+    }
 
     if request.method == "POST":
-        # Read and clean the submitted transaction values.
-        amount_text = (request.form.get("amount") or "").strip()
-        category_name = (request.form.get("category") or "").strip()
-        description = (
-            (request.form.get("description") or "").strip() or None
-        )
-        account_id_text = (request.form.get("account_id") or "").strip()
-        transaction_date = (request.form.get("date") or "").strip()
+        action = (
+            request.form.get("action") or "add_transaction"
+        ).strip()
 
-        cents_amount = None
-        account_id = None
-
-        # Decimal rejects malformed money and limits stored values to two decimals.
-        try:
-            amount = Decimal(amount_text)
-            cents_amount = amount.quantize(Decimal("0.01"))
-
-            if not amount.is_finite() or amount <= 0 or amount != cents_amount:
-                errors["amount"] = (
-                    "Enter an amount greater than zero with no more "
-                    "than two decimal places."
+        if action == "delete_transaction":
+            try:
+                transaction_id = parse_record_id(
+                    request.form.get("transaction_id"),
+                    "transaction"
                 )
-        except (InvalidOperation, ValueError):
-            errors["amount"] = (
-                "Enter an amount greater than zero with no more "
-                "than two decimal places."
-            )
-
-        # Validate text before it reaches SQLite.
-        if not category_name:
-            errors["category"] = f"{label} category is required."
-        elif len(category_name) > 50:
-            errors["category"] = (
-                f"{label} category must be 50 characters or fewer."
-            )
-
-        if description and len(description) > 150:
-            errors["description"] = (
-                "Description must be 150 characters or fewer."
-            )
-
-        # The selected account must belong to the current user.
-        try:
-            account_id = int(account_id_text)
-        except ValueError:
-            errors["account_id"] = "Select a valid account."
-        else:
-            if account_id not in account_ids:
-                errors["account_id"] = "Select a valid account."
-
-        # HTML date inputs submit values in YYYY-MM-DD format.
-        try:
-            datetime.strptime(transaction_date, "%Y-%m-%d")
-        except ValueError:
-            errors["date"] = "Select a valid date."
-
-        if errors:
-            # Preserve safe values while the user corrects the invalid fields.
-            form_data = {
-                "amount": amount_text,
-                "category": category_name,
-                "description": description or "",
-                "account_id": account_id_text,
-                "date": transaction_date
-            }
-        else:
-            # Reuse a category already loaded for this user and transaction type.
-            category_id = next(
-                (
-                    category["id"]
-                    for category in categories
-                    if category["name"].casefold() == category_name.casefold()
-                ),
-                None
-            )
-
-            if category_id is None:
-                # A new category will appear as a suggestion after the redirect.
-                category_id = db.execute(
-                    """
-                    INSERT INTO categories (user_id, name, type)
-                    VALUES (?, ?, ?)
-                    """,
+                delete_transaction(
+                    db,
+                    transaction_table,
                     user_id,
-                    category_name,
+                    transaction_id
+                )
+                flash(f"{label} deleted.", "success")
+            except ValidationError as error:
+                flash(str(error), "danger")
+
+            return redirect(transaction_page_url)
+
+        if action not in ("add_transaction", "update_transaction"):
+            flash("Choose a valid transaction action.", "danger")
+            return redirect(transaction_page_url)
+
+        transaction_id = None
+        if action == "update_transaction":
+            try:
+                transaction_id = parse_record_id(
+                    request.form.get("transaction_id"),
+                    "transaction"
+                )
+                get_owned_transaction(
+                    db,
+                    transaction_table,
+                    user_id,
+                    transaction_id
+                )
+            except ValidationError as error:
+                flash(str(error), "danger")
+                return redirect(transaction_page_url)
+
+        transaction_data, form_data, errors = validate_transaction_fields(
+            db,
+            user_id,
+            request.form
+        )
+
+        if not errors:
+            try:
+                transaction_data["category_id"] = get_or_create_category(
+                    db,
+                    user_id,
+                    transaction_data["category"],
                     category_type
                 )
+            except ValidationError as error:
+                errors["category"] = str(error)
 
-            # SQLite cannot bind Decimal directly, so store its validated float.
-            db.execute(
-                f"""
-                INSERT INTO {transaction_table} (
+        if errors and action == "update_transaction":
+            flash(" ".join(errors.values()), "danger")
+            return redirect(transaction_page_url)
+
+        if not errors:
+            if action == "add_transaction":
+                create_transaction(
+                    db,
+                    transaction_table,
                     user_id,
-                    amount,
-                    category_id,
-                    description,
-                    account_id,
-                    date
+                    transaction_data
                 )
-                VALUES (?, ?, ?, ?, ?, ?)
-                """,
-                user_id,
-                float(cents_amount),
-                category_id,
-                description,
-                account_id,
-                transaction_date
-            )
-
-            # Redirect after insertion so refreshing cannot duplicate the entry.
-            return redirect(
-                url_for(
-                    endpoint,
-                    limit="all" if show_all else page_limit,
-                    added=1,
-                    _external=True
+                flash(f"{label} added.", "success")
+            else:
+                update_transaction(
+                    db,
+                    transaction_table,
+                    user_id,
+                    transaction_id,
+                    transaction_data
                 )
-            )
-    else:
-        # Supply clean form defaults for a normal page request.
-        form_data = {
-            "amount": "",
-            "category": "",
-            "description": "",
-            "account_id": "",
-            "date": datetime.now().strftime("%Y-%m-%d")
-        }
+                flash(f"{label} updated.", "success")
 
-    # Read the active search, filter, and sorting values from the URL.
+            return redirect(transaction_page_url)
+
     search = (request.args.get("q") or "").strip()
     start_date = (request.args.get("start") or "").strip()
     end_date = (request.args.get("end") or "").strip()
@@ -784,7 +984,6 @@ def transaction_page(db, transaction_table, limit):
     maximum_text = (request.args.get("max") or "").strip()
     selected_sort = request.args.get("sort") or "newest"
 
-    # Repeated query parameters allow multiple categories and accounts.
     selected_categories = []
     for value in request.args.getlist("category"):
         try:
@@ -805,7 +1004,6 @@ def transaction_page(db, transaction_table, limit):
     parsed_start_date = None
     parsed_end_date = None
 
-    # Validate both ends of the optional date range.
     if start_date:
         try:
             parsed_start_date = datetime.strptime(
@@ -831,7 +1029,6 @@ def transaction_page(db, transaction_table, limit):
     ):
         filter_errors["date"] = "The start date must be before the end date."
 
-    # Validate both ends of the optional amount range.
     if minimum_text:
         try:
             minimum_amount = Decimal(minimum_text)
@@ -859,18 +1056,15 @@ def transaction_page(db, transaction_table, limit):
             "The minimum amount cannot exceed the maximum amount."
         )
 
-    # Every query begins by restricting results to the current user.
-    conditions = [f"{transaction_table}.user_id = ?"]
+    conditions = [f"{table}.user_id = ?"]
     parameters = [user_id]
 
-    # Search descriptions, categories, and accounts together.
     if search:
         search_pattern = f"%{search}%"
         conditions.append(
             f"""
             (
-                COALESCE({transaction_table}.description, '')
-                    LIKE ? COLLATE NOCASE
+                COALESCE({table}.description, '') LIKE ? COLLATE NOCASE
                 OR categories.name LIKE ? COLLATE NOCASE
                 OR accounts.name LIKE ? COLLATE NOCASE
             )
@@ -879,52 +1073,39 @@ def transaction_page(db, transaction_table, limit):
         parameters.extend([search_pattern, search_pattern, search_pattern])
 
     if parsed_start_date and "date" not in filter_errors:
-        conditions.append(f"date({transaction_table}.date) >= date(?)")
+        conditions.append(f"date({table}.date) >= date(?)")
         parameters.append(start_date)
 
     if parsed_end_date and "date" not in filter_errors:
-        conditions.append(f"date({transaction_table}.date) <= date(?)")
+        conditions.append(f"date({table}.date) <= date(?)")
         parameters.append(end_date)
 
     if selected_categories:
         placeholders = ", ".join("?" for _ in selected_categories)
-        conditions.append(
-            f"{transaction_table}.category_id IN ({placeholders})"
-        )
+        conditions.append(f"{table}.category_id IN ({placeholders})")
         parameters.extend(selected_categories)
 
     if selected_accounts:
         placeholders = ", ".join("?" for _ in selected_accounts)
-        conditions.append(
-            f"{transaction_table}.account_id IN ({placeholders})"
-        )
+        conditions.append(f"{table}.account_id IN ({placeholders})")
         parameters.extend(selected_accounts)
 
     if minimum_amount is not None and "amount" not in filter_errors:
-        conditions.append(f"{transaction_table}.amount >= ?")
+        conditions.append(f"{table}.amount >= ?")
         parameters.append(float(minimum_amount))
 
     if maximum_amount is not None and "amount" not in filter_errors:
-        conditions.append(f"{transaction_table}.amount <= ?")
+        conditions.append(f"{table}.amount <= ?")
         parameters.append(float(maximum_amount))
 
-    # Map public sort names to trusted SQL instead of using raw URL text.
     sort_options = {
-        "newest": (
-            f"{transaction_table}.date DESC, {transaction_table}.id DESC"
-        ),
-        "oldest": (
-            f"{transaction_table}.date ASC, {transaction_table}.id ASC"
-        ),
-        "amount_desc": (
-            f"{transaction_table}.amount DESC, {transaction_table}.date DESC"
-        ),
-        "amount_asc": (
-            f"{transaction_table}.amount ASC, {transaction_table}.date DESC"
-        ),
+        "newest": f"{table}.date DESC, {table}.id DESC",
+        "oldest": f"{table}.date ASC, {table}.id ASC",
+        "amount_desc": f"{table}.amount DESC, {table}.date DESC",
+        "amount_asc": f"{table}.amount ASC, {table}.date DESC",
         "description": (
-            f"COALESCE({transaction_table}.description, '') "
-            f"COLLATE NOCASE ASC, {transaction_table}.date DESC"
+            f"COALESCE({table}.description, '') COLLATE NOCASE ASC, "
+            f"{table}.date DESC"
         )
     }
 
@@ -933,30 +1114,29 @@ def transaction_page(db, transaction_table, limit):
 
     where_sql = " AND ".join(conditions)
     order_sql = sort_options[selected_sort]
-
     entries_sql = f"""
         SELECT
-            {transaction_table}.id,
-            {transaction_table}.amount,
-            {transaction_table}.description,
-            strftime('%m/%d/%Y', {transaction_table}.date) AS display_date,
+            {table}.id,
+            {table}.amount,
+            {table}.description,
+            {table}.account_id,
+            date({table}.date) AS raw_date,
+            strftime('%m/%d/%Y', {table}.date) AS display_date,
             categories.name AS category,
             accounts.name AS account
-        FROM {transaction_table}
+        FROM {table}
         JOIN categories
-            ON categories.id = {transaction_table}.category_id
+            ON categories.id = {table}.category_id
         JOIN accounts
-            ON accounts.id = {transaction_table}.account_id
+            ON accounts.id = {table}.account_id
         WHERE {where_sql}
         ORDER BY {order_sql}
     """
 
     if show_all:
-        # The final view intentionally omits LIMIT.
         entries = db.execute(entries_sql, *parameters)
         has_more = False
     else:
-        # One extra row tells the page whether Load More is needed.
         entries = db.execute(
             entries_sql + " LIMIT ?",
             *parameters,
@@ -965,13 +1145,12 @@ def transaction_page(db, transaction_table, limit):
         has_more = len(entries) > page_limit
         entries = entries[:page_limit]
 
-    # The summary remains the unfiltered total for the current local month.
     summary = db.execute(
         f"""
         SELECT
             COALESCE(SUM(amount), 0) AS total,
             COUNT(*) AS count
-        FROM {transaction_table}
+        FROM {table}
         WHERE user_id = ?
           AND date(date, 'start of month') =
               date('now', 'localtime', 'start of month')
@@ -979,7 +1158,6 @@ def transaction_page(db, transaction_table, limit):
         user_id
     )[0]
 
-    # Advance from 10 to 25, then 50, and finally all remaining rows.
     next_limit = None
     if has_more:
         if page_limit == 10:
@@ -989,15 +1167,13 @@ def transaction_page(db, transaction_table, limit):
         elif page_limit == 50:
             next_limit = "all"
 
-    # Keep active filters ready whether or not another page is available.
-    next_arguments = request.args.to_dict(flat=False)
-    next_arguments.pop("added", None)
-    next_query = urlencode(next_arguments, doseq=True)
-
     next_page_url = None
     if next_limit is not None:
-        next_path = url_for(endpoint, limit=next_limit)
-        next_page_url = f"{next_path}?{next_query}" if next_query else next_path
+        next_page_url = build_transaction_page_url(
+            endpoint,
+            next_limit,
+            request.args
+        )
 
     filters = {
         "q": search,
@@ -1020,7 +1196,10 @@ def transaction_page(db, transaction_table, limit):
         filter_errors=filter_errors,
         form_data=form_data,
         filters=filters,
-        current_limit="all" if show_all else page_limit,
+        current_limit=current_limit,
         next_page_url=next_page_url,
-        showing_all=show_all
+        showing_all=show_all,
+        transaction_page_url=transaction_page_url,
+        transaction_amount_class=settings["amount_class"],
+        transaction_empty_message=settings["empty_message"]
     ), 400 if errors else 200

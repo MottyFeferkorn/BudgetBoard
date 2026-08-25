@@ -521,7 +521,7 @@ main {
 }
 
 .income-table {
-    min-width: 760px;
+    min-width: 1040px;
     table-layout: fixed;
 }
 
@@ -531,15 +531,19 @@ main {
 }
 
 .income-table .income-col-standard {
-    width: 19%;
+    width: 16%;
 }
 
 .income-table .income-col-description {
-    width: 23%;
+    width: 20%;
 }
 
 .income-table .income-col-account {
-    width: 20%;
+    width: 16%;
+}
+
+.income-table .income-col-actions {
+    width: 16%;
 }
 
 .income-table thead th {
@@ -571,6 +575,66 @@ main {
 .income-table .income-amount-column {
     text-align: center;
     white-space: nowrap;
+}
+
+.income-table .transaction-action-column {
+    text-align: right;
+}
+
+.transaction-edit-trigger {
+    opacity: 0;
+    transition: opacity 0.15s ease, color 0.15s ease;
+}
+
+.transaction-row:hover .transaction-edit-trigger,
+.transaction-row:focus-within .transaction-edit-trigger {
+    opacity: 1;
+}
+
+.transaction-edit-trigger:hover,
+.transaction-edit-trigger:focus {
+    color: #0d6efd !important;
+}
+
+.transaction-delete-trigger {
+    flex: 0 0 auto;
+}
+
+.transaction-edit-input {
+    min-height: 2.25rem;
+    border-color: #dfe3e7;
+    border-radius: 0.55rem;
+}
+
+.transaction-edit-input:focus {
+    border-color: rgba(13, 110, 253, 0.55);
+    box-shadow: 0 0 0 0.18rem rgba(13, 110, 253, 0.1);
+}
+
+.transaction-amount-input .input-group-text {
+    border-color: #dfe3e7;
+    border-radius: 0.55rem 0 0 0.55rem;
+}
+
+.transaction-amount-input .form-control {
+    border-radius: 0 0.55rem 0.55rem 0;
+}
+
+.income-table .transaction-action-column .btn {
+    white-space: nowrap;
+}
+
+.income-table .modal {
+    color: #212529;
+    font-weight: 400;
+    text-align: left;
+    white-space: normal;
+}
+
+@media (max-width: 767.98px) {
+    .transaction-edit-trigger {
+        opacity: 1;
+    }
 }
 
 .income-category {
