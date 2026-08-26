@@ -4,20 +4,6 @@
     <div class="settings-category-list">
         {% for category in categories %}
             {% set editing = edit_category_id == category["id"] %}
-            <div class="collapse settings-category-row category-item-{{ category['id'] }}{% if not editing %} show{% endif %}">
-                <span class="settings-category-name">{{ category["name"] }}</span>
-                <button
-                    class="btn settings-category-edit-button"
-                    type="button"
-                    data-bs-toggle="collapse"
-                    data-bs-target=".category-item-{{ category['id'] }}"
-                    aria-expanded="false"
-                    aria-label="Edit {{ category['name'] }} category"
-                >
-                    <i class="bi bi-pencil" aria-hidden="true"></i>
-                </button>
-            </div>
-
             <form class="collapse settings-category-row settings-category-row-editing category-item-{{ category['id'] }}{% if editing %} show{% endif %}" action="{{ url_for('settings') }}" method="post">
                 <input name="category_id" type="hidden" value="{{ category['id'] }}">
                 <input name="category_type" type="hidden" value="{{ category_type }}">
@@ -59,6 +45,20 @@
                     <i class="bi bi-trash3" aria-hidden="true"></i>
                 </button>
             </form>
+
+            <div class="collapse settings-category-row category-item-{{ category['id'] }}{% if not editing %} show{% endif %}">
+                <span class="settings-category-name">{{ category["name"] }}</span>
+                <button
+                    class="btn settings-category-edit-button"
+                    type="button"
+                    data-bs-toggle="collapse"
+                    data-bs-target=".category-item-{{ category['id'] }}"
+                    aria-expanded="false"
+                    aria-label="Edit {{ category['name'] }} category"
+                >
+                    <i class="bi bi-pencil" aria-hidden="true"></i>
+                </button>
+            </div>
         {% else %}
             <div class="settings-empty-state">
                 <i class="bi bi-tags" aria-hidden="true"></i>
