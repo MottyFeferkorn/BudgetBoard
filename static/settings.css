@@ -41,33 +41,41 @@
 }
 
 #settings-account-section:checked ~ .settings-sidebar label[for="settings-account-section"],
-#settings-categories-section:checked ~ .settings-sidebar label[for="settings-categories-section"] {
+#settings-categories-section:checked ~ .settings-sidebar label[for="settings-categories-section"],
+#settings-recurring-section:checked ~ .settings-sidebar label[for="settings-recurring-section"] {
     background-color: rgba(13, 110, 253, 0.1);
     color: #0d6efd;
 }
 
 #settings-account-section:focus-visible ~ .settings-sidebar label[for="settings-account-section"],
-#settings-categories-section:focus-visible ~ .settings-sidebar label[for="settings-categories-section"] {
+#settings-categories-section:focus-visible ~ .settings-sidebar label[for="settings-categories-section"],
+#settings-recurring-section:focus-visible ~ .settings-sidebar label[for="settings-recurring-section"] {
     outline: 0.2rem solid rgba(13, 110, 253, 0.25);
     outline-offset: 0.1rem;
 }
 
 .settings-account-panel,
 .settings-categories-panel,
-.settings-category-pane {
+.settings-recurring-panel,
+.settings-category-pane,
+.settings-recurring-pane {
     display: none;
 }
 
 #settings-account-section:checked ~ .settings-content .settings-account-panel,
 #settings-categories-section:checked ~ .settings-content .settings-categories-panel,
+#settings-recurring-section:checked ~ .settings-content .settings-recurring-panel,
 #income-categories:checked ~ .settings-category-panels .income-category-pane,
-#expense-categories:checked ~ .settings-category-panels .expense-category-pane {
+#expense-categories:checked ~ .settings-category-panels .expense-category-pane,
+#income-recurring:checked ~ .settings-recurring-panels .income-recurring-pane,
+#expense-recurring:checked ~ .settings-recurring-panels .expense-recurring-pane {
     display: block;
 }
 
 .settings-icon-button,
 .settings-category-edit-button,
-.settings-category-delete-button {
+.settings-category-delete-button,
+.settings-recurring-delete-button {
     display: grid;
     width: 2.65rem;
     height: 2.65rem;
@@ -151,6 +159,38 @@
     border: 1px solid #e9ecef;
     border-radius: 0.85rem;
     background-color: #f8f9fa;
+}
+
+.settings-recurring-tabs {
+    width: min(100%, 22rem);
+    padding: 0.3rem;
+    border: 1px solid #e9ecef;
+    border-radius: 0.85rem;
+    background-color: #f8f9fa;
+}
+
+.settings-recurring-tabs .btn {
+    flex: 1 1 0;
+    border: 0;
+    border-radius: 0.6rem !important;
+    color: #6c757d;
+    font-weight: 600;
+}
+
+.settings-recurring-tabs .btn:hover {
+    color: #212529;
+}
+
+#income-recurring:checked ~ .settings-recurring-tabs label[for="income-recurring"],
+#expense-recurring:checked ~ .settings-recurring-tabs label[for="expense-recurring"] {
+    background-color: #0d6efd;
+    color: #fff;
+    box-shadow: 0 0.3rem 0.7rem rgba(13, 110, 253, 0.18);
+}
+
+#income-recurring:focus-visible ~ .settings-recurring-tabs label[for="income-recurring"],
+#expense-recurring:focus-visible ~ .settings-recurring-tabs label[for="expense-recurring"] {
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
 }
 
 .settings-category-tabs .btn {
@@ -237,7 +277,9 @@
 }
 
 .settings-category-delete-button:hover,
-.settings-category-delete-button:focus {
+.settings-category-delete-button:focus,
+.settings-recurring-delete-button:hover,
+.settings-recurring-delete-button:focus {
     background-color: #fff1f2;
     color: #b02a37;
 }
@@ -245,6 +287,166 @@
 .settings-category-footer {
     padding: 1rem 1.25rem;
     background-color: #fbfcfd;
+}
+
+.settings-recurring-list {
+    overflow: hidden;
+    border: 1px solid #edf0f2;
+    border-radius: 1rem;
+    background-color: #fff;
+}
+
+.settings-recurring-row {
+    display: grid;
+    min-height: 5.25rem;
+    grid-template-columns: minmax(12rem, 1.35fr) minmax(11rem, 1fr) minmax(8.5rem, 0.75fr) minmax(8.5rem, 0.75fr) auto;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid #edf0f2;
+    transition: background-color 0.15s ease;
+}
+
+.settings-recurring-row:last-child {
+    border-bottom: 0;
+}
+
+.settings-recurring-row:hover {
+    background-color: #fbfcfd;
+}
+
+.settings-recurring-identity {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 0.8rem;
+}
+
+.settings-recurring-icon {
+    display: grid;
+    width: 2.65rem;
+    height: 2.65rem;
+    flex: 0 0 2.65rem;
+    place-items: center;
+    border-radius: 0.75rem;
+}
+
+.settings-recurring-icon-income {
+    color: #198754;
+    background-color: rgba(25, 135, 84, 0.1);
+}
+
+.settings-recurring-icon-expense {
+    color: #dc3545;
+    background-color: rgba(220, 53, 69, 0.09);
+}
+
+.settings-recurring-detail {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 0.2rem;
+    color: #343a40;
+    font-size: 0.84rem;
+}
+
+.settings-recurring-label {
+    color: #6c757d;
+    font-size: 0.72rem;
+    font-weight: 600;
+}
+
+.settings-recurring-row-editing {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: start;
+    gap: 1rem;
+    padding-top: 1.25rem;
+    padding-bottom: 1.25rem;
+    background-color: #fbfcfd;
+}
+
+.settings-recurring-delete-button {
+    color: #dc3545;
+}
+
+.settings-recurring-edit-fields {
+    min-width: 0;
+}
+
+.settings-recurring-edit-fields .form-label {
+    margin-bottom: 0.4rem;
+}
+
+.settings-input-group .input-group-text,
+.settings-input-group .form-control {
+    min-height: 2.75rem;
+    border-color: #dee2e6;
+}
+
+.settings-input-group .input-group-text {
+    background-color: #f8f9fa;
+}
+
+.settings-input-group .input-group-text:first-child,
+.settings-input-group .form-control:first-child {
+    border-radius: 0.7rem 0 0 0.7rem;
+}
+
+.settings-input-group .input-group-text:last-child,
+.settings-input-group .form-control:last-child {
+    border-radius: 0 0.7rem 0.7rem 0;
+}
+
+.settings-next-date {
+    display: flex;
+    min-height: 2.75rem;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.6rem 0.8rem;
+    border: 1px solid #e9ecef;
+    border-radius: 0.7rem;
+    background-color: #fff;
+    color: #343a40;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.settings-recurring-edit-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+@media (max-width: 1199.98px) {
+    .settings-recurring-row:not(.settings-recurring-row-editing) {
+        grid-template-columns: minmax(12rem, 1fr) minmax(11rem, 1fr) auto;
+    }
+
+    .settings-recurring-row:not(.settings-recurring-row-editing) .settings-recurring-identity {
+        grid-column: 1;
+        grid-row: 1;
+    }
+
+    .settings-recurring-row:not(.settings-recurring-row-editing) .settings-recurring-detail:nth-of-type(2) {
+        grid-column: 2;
+        grid-row: 1;
+    }
+
+    .settings-recurring-row:not(.settings-recurring-row-editing) .settings-recurring-detail:nth-of-type(3) {
+        grid-column: 1;
+        grid-row: 2;
+        padding-left: 3.45rem;
+    }
+
+    .settings-recurring-row:not(.settings-recurring-row-editing) .settings-recurring-detail:nth-of-type(4) {
+        grid-column: 2;
+        grid-row: 2;
+    }
+
+    .settings-recurring-row:not(.settings-recurring-row-editing) > .settings-category-edit-button {
+        grid-column: 3;
+        grid-row: 1;
+    }
 }
 
 @media (max-width: 767.98px) {
@@ -284,20 +486,58 @@
         width: 100%;
     }
 
+    .settings-recurring-tabs {
+        width: 100%;
+    }
+
     .settings-category-row {
         padding: 0.85rem 1rem;
     }
 
     .settings-category-row-editing {
-        grid-template-columns: minmax(0, 1fr) auto;
+        grid-template-columns: auto minmax(0, 1fr);
         gap: 0.65rem;
     }
 
     .settings-category-edit-actions {
-        grid-column: 1 / -1;
+        grid-column: 2;
+        justify-content: flex-end;
     }
 
     .settings-row-button {
         flex: 1 1 0;
+    }
+
+    .settings-recurring-row:not(.settings-recurring-row-editing) {
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 0.75rem;
+    }
+
+    .settings-recurring-row:not(.settings-recurring-row-editing) .settings-recurring-detail {
+        grid-column: 1;
+        padding-left: 3.45rem;
+    }
+
+    .settings-recurring-row:not(.settings-recurring-row-editing) .settings-recurring-detail:nth-of-type(4) {
+        grid-column: 1;
+        grid-row: auto;
+    }
+
+    .settings-recurring-row:not(.settings-recurring-row-editing) > .settings-category-edit-button {
+        grid-column: 2;
+        grid-row: 1;
+    }
+
+    .settings-recurring-row-editing {
+        grid-template-columns: auto minmax(0, 1fr);
+    }
+
+    .settings-recurring-edit-fields {
+        grid-column: 1 / -1;
+    }
+
+    .settings-recurring-edit-actions {
+        grid-column: 1 / -1;
+        justify-content: flex-end;
     }
 }

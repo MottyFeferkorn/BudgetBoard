@@ -16,12 +16,13 @@
         <div class="container-xl">
             <header class="mb-4">
                 <h1 class="h2 fw-bold mb-1">Settings</h1>
-                <p class="text-secondary mb-0">Manage your account and categories.</p>
+                <p class="text-secondary mb-0">Manage your account, categories, and recurring events.</p>
             </header>
 
             <div class="row g-4 align-items-start settings-layout">
                 <input class="btn-check" type="radio" name="settings-section" id="settings-account-section" checked>
                 <input class="btn-check" type="radio" name="settings-section" id="settings-categories-section">
+                <input class="btn-check" type="radio" name="settings-section" id="settings-recurring-section">
 
                 <aside class="col-12 col-lg-3 settings-sidebar" aria-label="Settings navigation">
                     <div class="card settings-nav-card border-0">
@@ -34,6 +35,10 @@
                                 <label class="settings-nav-link" for="settings-categories-section" role="tab">
                                     <i class="bi bi-tags" aria-hidden="true"></i>
                                     <span>Manage Categories</span>
+                                </label>
+                                <label class="settings-nav-link" for="settings-recurring-section" role="tab">
+                                    <i class="bi bi-arrow-repeat" aria-hidden="true"></i>
+                                    <span>Manage Recurring Events</span>
                                 </label>
                             </nav>
                         </div>
@@ -145,15 +150,17 @@
 
                                             <!-- Static preview of a category row in edit mode. -->
                                             <div class="settings-category-row settings-category-row-editing">
+                                                <button class="btn settings-category-delete-button" type="button" aria-label="Delete Freelance category">
+                                                    <i class="bi bi-trash3" aria-hidden="true"></i>
+                                                </button>
+                                                <div>
+                                                    <label class="visually-hidden" for="edit-freelance-category">Category name</label>
+                                                    <input class="form-control settings-category-input w-100" id="edit-freelance-category" type="text" value="Freelance">
+                                                </div>
                                                 <div class="settings-category-edit-actions">
                                                     <button class="btn btn-light settings-row-button" type="button">Cancel</button>
                                                     <button class="btn btn-primary settings-row-button" type="button">Save</button>
                                                 </div>
-                                                <label class="visually-hidden" for="edit-freelance-category">Category name</label>
-                                                <input class="form-control settings-category-input" id="edit-freelance-category" type="text" value="Freelance">
-                                                <button class="btn settings-category-delete-button" type="button" aria-label="Delete Freelance category">
-                                                    <i class="bi bi-trash3" aria-hidden="true"></i>
-                                                </button>
                                             </div>
 
                                             <div class="settings-category-row">
@@ -201,6 +208,223 @@
                                             <div class="settings-category-footer">
                                                 <button class="btn btn-outline-primary settings-add-category" type="button">
                                                     <i class="bi bi-plus-lg me-2" aria-hidden="true"></i>Add Category
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </section>
+                                </div>
+                            </div>
+                        </div>
+                    </article>
+
+                    <article class="card settings-card settings-recurring-panel border-0" aria-labelledby="recurring-heading">
+                        <div class="card-body p-4 p-lg-5">
+                            <header class="mb-4">
+                                <h2 class="h4 fw-bold mb-1" id="recurring-heading">Manage Recurring Events</h2>
+                                <p class="text-secondary mb-0">Manage income and expenses that repeat automatically.</p>
+                            </header>
+
+                            <div class="settings-recurring-switcher">
+                                <input class="btn-check" type="radio" name="recurring-type" id="income-recurring" checked>
+                                <input class="btn-check" type="radio" name="recurring-type" id="expense-recurring">
+
+                                <div class="btn-group settings-recurring-tabs mb-4" role="tablist" aria-label="Recurring event type">
+                                    <label class="btn" for="income-recurring" role="tab">Income</label>
+                                    <label class="btn" for="expense-recurring" role="tab">Expenses</label>
+                                </div>
+
+                                <div class="settings-recurring-panels">
+                                    <section class="settings-recurring-pane income-recurring-pane" aria-label="Recurring income events">
+                                        <div class="settings-recurring-list">
+                                            <div class="settings-recurring-row">
+                                                <div class="settings-recurring-identity">
+                                                    <div class="settings-recurring-icon settings-recurring-icon-income" aria-hidden="true">
+                                                        <i class="bi bi-briefcase"></i>
+                                                    </div>
+                                                    <div class="min-w-0">
+                                                        <h3 class="h6 fw-bold mb-1">Salary</h3>
+                                                        <p class="small text-secondary mb-0">Income deposit</p>
+                                                    </div>
+                                                </div>
+                                                <div class="settings-recurring-detail">
+                                                    <span class="settings-recurring-label">Amount &amp; account</span>
+                                                    <span><strong class="text-success">$2,500.00</strong> · Main Checking</span>
+                                                </div>
+                                                <div class="settings-recurring-detail">
+                                                    <span class="settings-recurring-label">Schedule</span>
+                                                    <span>Every 14 days</span>
+                                                </div>
+                                                <div class="settings-recurring-detail">
+                                                    <span class="settings-recurring-label">Next occurrence</span>
+                                                    <span>Sep 5, 2026</span>
+                                                </div>
+                                                <button class="btn settings-category-edit-button" type="button" aria-label="Edit Salary recurring event">
+                                                    <i class="bi bi-pencil" aria-hidden="true"></i>
+                                                </button>
+                                            </div>
+
+                                            <div class="settings-recurring-row">
+                                                <div class="settings-recurring-identity">
+                                                    <div class="settings-recurring-icon settings-recurring-icon-income" aria-hidden="true">
+                                                        <i class="bi bi-laptop"></i>
+                                                    </div>
+                                                    <div class="min-w-0">
+                                                        <h3 class="h6 fw-bold mb-1">Freelance Retainer</h3>
+                                                        <p class="small text-secondary mb-0">Monthly client retainer</p>
+                                                    </div>
+                                                </div>
+                                                <div class="settings-recurring-detail">
+                                                    <span class="settings-recurring-label">Amount &amp; account</span>
+                                                    <span><strong class="text-success">$850.00</strong> · Main Checking</span>
+                                                </div>
+                                                <div class="settings-recurring-detail">
+                                                    <span class="settings-recurring-label">Schedule</span>
+                                                    <span>Monthly on day 1</span>
+                                                </div>
+                                                <div class="settings-recurring-detail">
+                                                    <span class="settings-recurring-label">Next occurrence</span>
+                                                    <span>Sep 1, 2026</span>
+                                                </div>
+                                                <button class="btn settings-category-edit-button" type="button" aria-label="Edit Freelance Retainer recurring event">
+                                                    <i class="bi bi-pencil" aria-hidden="true"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </section>
+
+                                    <section class="settings-recurring-pane expense-recurring-pane" aria-label="Recurring expense events">
+                                        <div class="settings-recurring-list">
+                                            <div class="settings-recurring-row">
+                                                <div class="settings-recurring-identity">
+                                                    <div class="settings-recurring-icon settings-recurring-icon-expense" aria-hidden="true">
+                                                        <i class="bi bi-house-door"></i>
+                                                    </div>
+                                                    <div class="min-w-0">
+                                                        <h3 class="h6 fw-bold mb-1">Rent</h3>
+                                                        <p class="small text-secondary mb-0">Monthly apartment rent</p>
+                                                    </div>
+                                                </div>
+                                                <div class="settings-recurring-detail">
+                                                    <span class="settings-recurring-label">Amount &amp; account</span>
+                                                    <span><strong class="text-danger">$2,000.00</strong> · Main Checking</span>
+                                                </div>
+                                                <div class="settings-recurring-detail">
+                                                    <span class="settings-recurring-label">Schedule</span>
+                                                    <span>Monthly on day 1</span>
+                                                </div>
+                                                <div class="settings-recurring-detail">
+                                                    <span class="settings-recurring-label">Next occurrence</span>
+                                                    <span>Sep 1, 2026</span>
+                                                </div>
+                                                <button class="btn settings-category-edit-button" type="button" aria-label="Edit Rent recurring event">
+                                                    <i class="bi bi-pencil" aria-hidden="true"></i>
+                                                </button>
+                                            </div>
+
+                                            <!-- Static preview of a recurring event in edit mode. -->
+                                            <div class="settings-recurring-row settings-recurring-row-editing">
+                                                <button class="btn settings-recurring-delete-button" type="button" aria-label="Delete Insurance recurring event">
+                                                    <i class="bi bi-trash3" aria-hidden="true"></i>
+                                                </button>
+
+                                                <div class="settings-recurring-edit-fields">
+                                                    <div class="d-flex flex-column flex-sm-row align-items-sm-center justify-content-between gap-1 mb-3">
+                                                        <div class="d-flex align-items-center gap-2">
+                                                            <h3 class="h6 fw-bold mb-0">Insurance</h3>
+                                                            <span class="badge rounded-pill text-bg-light border text-secondary">Editing</span>
+                                                        </div>
+                                                        <span class="small text-secondary">$180.00 · Main Checking</span>
+                                                    </div>
+                                                    <div class="row g-3">
+                                                        <div class="col-12 col-sm-6 col-xl-4">
+                                                            <label class="form-label small fw-semibold" for="recurring-amount">Amount</label>
+                                                            <div class="input-group settings-input-group">
+                                                                <span class="input-group-text">$</span>
+                                                                <input class="form-control" id="recurring-amount" type="number" min="0" step="0.01" value="180.00">
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-12 col-sm-6 col-xl-4">
+                                                            <label class="form-label small fw-semibold" for="recurring-category">Category</label>
+                                                            <select class="form-select settings-form-control" id="recurring-category">
+                                                                <option>Rent</option>
+                                                                <option selected>Insurance</option>
+                                                                <option>Subscriptions</option>
+                                                            </select>
+                                                        </div>
+                                                        <div class="col-12 col-xl-4">
+                                                            <label class="form-label small fw-semibold" for="recurring-description">Description <span class="text-secondary fw-normal">(optional)</span></label>
+                                                            <input class="form-control settings-form-control" id="recurring-description" type="text" value="Car insurance">
+                                                        </div>
+                                                        <div class="col-12 col-sm-6 col-xl-4">
+                                                            <label class="form-label small fw-semibold" for="recurring-account">Account</label>
+                                                            <select class="form-select settings-form-control" id="recurring-account">
+                                                                <option selected>Main Checking</option>
+                                                                <option>Credit Card</option>
+                                                                <option>Savings</option>
+                                                            </select>
+                                                        </div>
+                                                        <div class="col-12 col-sm-6 col-xl-4">
+                                                            <label class="form-label small fw-semibold" for="recurring-start-date">Start date</label>
+                                                            <input class="form-control settings-form-control" id="recurring-start-date" type="date" value="2026-08-15">
+                                                        </div>
+                                                        <div class="col-12 col-sm-6 col-xl-4">
+                                                            <label class="form-label small fw-semibold" for="recurring-end-date">End date <span class="text-secondary fw-normal">(optional)</span></label>
+                                                            <input class="form-control settings-form-control" id="recurring-end-date" type="date">
+                                                        </div>
+                                                        <div class="col-12 col-sm-6 col-xl-4">
+                                                            <label class="form-label small fw-semibold" for="recurring-pattern">Recurrence type</label>
+                                                            <select class="form-select settings-form-control" id="recurring-pattern">
+                                                                <option>Every X days</option>
+                                                                <option selected>Monthly</option>
+                                                            </select>
+                                                        </div>
+                                                        <div class="col-12 col-sm-6 col-xl-4">
+                                                            <label class="form-label small fw-semibold" for="recurring-month-day">Schedule</label>
+                                                            <div class="input-group settings-input-group">
+                                                                <span class="input-group-text">Monthly on day</span>
+                                                                <input class="form-control" id="recurring-month-day" type="number" min="1" max="31" value="15" aria-label="Day of month">
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-12 col-sm-6 col-xl-4">
+                                                            <span class="form-label small fw-semibold d-block">Next occurrence</span>
+                                                            <div class="settings-next-date">
+                                                                <i class="bi bi-calendar-event text-primary" aria-hidden="true"></i>
+                                                                <span>Sep 15, 2026</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div class="settings-recurring-edit-actions">
+                                                    <button class="btn btn-light settings-row-button" type="button">Cancel</button>
+                                                    <button class="btn btn-primary settings-row-button" type="button">Save</button>
+                                                </div>
+                                            </div>
+
+                                            <div class="settings-recurring-row">
+                                                <div class="settings-recurring-identity">
+                                                    <div class="settings-recurring-icon settings-recurring-icon-expense" aria-hidden="true">
+                                                        <i class="bi bi-credit-card"></i>
+                                                    </div>
+                                                    <div class="min-w-0">
+                                                        <h3 class="h6 fw-bold mb-1">Subscription</h3>
+                                                        <p class="small text-secondary mb-0">Software subscription</p>
+                                                    </div>
+                                                </div>
+                                                <div class="settings-recurring-detail">
+                                                    <span class="settings-recurring-label">Amount &amp; account</span>
+                                                    <span><strong class="text-danger">$24.99</strong> · Credit Card</span>
+                                                </div>
+                                                <div class="settings-recurring-detail">
+                                                    <span class="settings-recurring-label">Schedule</span>
+                                                    <span>Every 30 days</span>
+                                                </div>
+                                                <div class="settings-recurring-detail">
+                                                    <span class="settings-recurring-label">Next occurrence</span>
+                                                    <span>Sep 12, 2026</span>
+                                                </div>
+                                                <button class="btn settings-category-edit-button" type="button" aria-label="Edit Subscription recurring event">
+                                                    <i class="bi bi-pencil" aria-hidden="true"></i>
                                                 </button>
                                             </div>
                                         </div>
