@@ -1652,11 +1652,10 @@ def process_recurrent_events(db, user_id, today=None):
           ON categories.id = recurring_events.category_id
          AND categories.user_id = recurring_events.user_id
         WHERE recurring_events.user_id = ?
-          AND date(recurring_events.next_date) <= date(?)
+          AND recurring_events.next_date <= ?
           AND (
                 recurring_events.end_date IS NULL
-                OR date(recurring_events.next_date) <=
-                   date(recurring_events.end_date)
+                OR recurring_events.next_date <= recurring_events.end_date
           )
         ORDER BY recurring_events.next_date, recurring_events.id
         """,
@@ -2129,7 +2128,7 @@ def transaction_page(db, transaction_table, limit):
         FROM accounts
         WHERE user_id = ?
           AND active = 1
-        ORDER BY name
+        ORDER BY name COLLATE NOCASE
         """,
         user_id
     )
@@ -2341,11 +2340,11 @@ def transaction_page(db, transaction_table, limit):
         parameters.extend([search_pattern, search_pattern, search_pattern])
 
     if parsed_start_date and "date" not in filter_errors:
-        conditions.append(f"date({table}.date) >= date(?)")
+        conditions.append(f"{table}.date >= ?")
         parameters.append(start_date)
 
     if parsed_end_date and "date" not in filter_errors:
-        conditions.append(f"date({table}.date) <= date(?)")
+        conditions.append(f"{table}.date < date(?, '+1 day')")
         parameters.append(end_date)
 
     if selected_categories:
@@ -2421,8 +2420,13 @@ def transaction_page(db, transaction_table, limit):
             COUNT(*) AS count
         FROM {table}
         WHERE user_id = ?
-          AND date(date, 'start of month') =
-              date('now', 'localtime', 'start of month')
+          AND date >= date('now', 'localtime', 'start of month')
+          AND date < date(
+              'now',
+              'localtime',
+              'start of month',
+              '+1 month'
+          )
         """,
         user_id
     )[0]
@@ -2794,30 +2798,35 @@ def load_report_category_breakdown(
     }
 
 
-def load_report_plan_comparison(
+def load_report_plan_comparisons(
     db,
     user_id,
     selected_month,
-    period_end,
-    comparison_type
+    period_end
 ):
-    """Compare a saved income or expense plan with actual activity."""
-    transaction_table = get_report_transaction_table(comparison_type)
+    """Load income and expense plan comparisons in one query."""
     period_start_value = selected_month.isoformat()
     period_end_value = period_end.isoformat()
     plan = get_budget_plan(db, user_id, period_start_value)
-
-    if not plan:
-        return {
-            "exists": False,
-            "comparison_type": comparison_type,
+    comparisons = {
+        "income": {
+            "exists": plan is not None,
+            "items": []
+        },
+        "expense": {
+            "exists": plan is not None,
             "items": []
         }
+    }
+
+    if not plan:
+        return comparisons
 
     rows = db.execute(
-        f"""
+        """
         WITH planned AS (
             SELECT
+                categories.type AS comparison_type,
                 budget_plan_items.category_id,
                 budget_plan_items.amount AS planned_amount
             FROM budget_plan_items
@@ -2827,29 +2836,46 @@ def load_report_plan_comparison(
             JOIN categories
               ON categories.id = budget_plan_items.category_id
              AND categories.user_id = budget_plans.user_id
-             AND categories.type = ?
             WHERE budget_plan_items.plan_id = ?
         ),
         actual AS (
             SELECT
-                {transaction_table}.category_id,
-                SUM({transaction_table}.amount) AS actual_amount
-            FROM {transaction_table}
+                'income' AS comparison_type,
+                income.category_id,
+                SUM(income.amount) AS actual_amount
+            FROM income
             JOIN categories
-              ON categories.id = {transaction_table}.category_id
-             AND categories.user_id = {transaction_table}.user_id
-             AND categories.type = ?
-            WHERE {transaction_table}.user_id = ?
-              AND {transaction_table}.date >= ?
-              AND {transaction_table}.date < ?
-            GROUP BY {transaction_table}.category_id
+              ON categories.id = income.category_id
+             AND categories.user_id = income.user_id
+             AND categories.type = 'income'
+            WHERE income.user_id = ?
+              AND income.date >= ?
+              AND income.date < ?
+            GROUP BY income.category_id
+
+            UNION ALL
+
+            SELECT
+                'expense' AS comparison_type,
+                expenses.category_id,
+                SUM(expenses.amount) AS actual_amount
+            FROM expenses
+            JOIN categories
+              ON categories.id = expenses.category_id
+             AND categories.user_id = expenses.user_id
+             AND categories.type = 'expense'
+            WHERE expenses.user_id = ?
+              AND expenses.date >= ?
+              AND expenses.date < ?
+            GROUP BY expenses.category_id
         ),
         category_ids AS (
-            SELECT category_id FROM planned
+            SELECT comparison_type, category_id FROM planned
             UNION
-            SELECT category_id FROM actual
+            SELECT comparison_type, category_id FROM actual
         )
         SELECT
+            category_ids.comparison_type,
             categories.id AS category_id,
             categories.name AS category_name,
             COALESCE(planned.planned_amount, 0) AS planned_amount,
@@ -2858,27 +2884,28 @@ def load_report_plan_comparison(
         JOIN categories
           ON categories.id = category_ids.category_id
          AND categories.user_id = ?
-         AND categories.type = ?
+         AND categories.type = category_ids.comparison_type
         LEFT JOIN planned
           ON planned.category_id = category_ids.category_id
+         AND planned.comparison_type = category_ids.comparison_type
         LEFT JOIN actual
           ON actual.category_id = category_ids.category_id
-        ORDER BY categories.name
+         AND actual.comparison_type = category_ids.comparison_type
+        ORDER BY category_ids.comparison_type, categories.name
         """,
         user_id,
-        comparison_type,
         plan["id"],
-        comparison_type,
         user_id,
         period_start_value,
         period_end_value,
         user_id,
-        comparison_type
+        period_start_value,
+        period_end_value,
+        user_id
     )
 
-    items = []
-
     for row in rows:
+        comparison_type = row["comparison_type"]
         planned_amount = report_money(row["planned_amount"])
         actual_amount = report_money(row["actual_amount"])
 
@@ -2907,7 +2934,7 @@ def load_report_plan_comparison(
             difference_prefix = ""
             difference_tone = "neutral"
 
-        items.append({
+        comparisons[comparison_type]["items"].append({
             "category_id": row["category_id"],
             "category_name": row["category_name"],
             "planned_amount": planned_amount,
@@ -2920,19 +2947,16 @@ def load_report_plan_comparison(
             "is_unplanned": planned_amount == 0 and actual_amount > 0
         })
 
-    items.sort(
-        key=lambda item: (
-            item["difference_tone"] != "negative",
-            -item["actual_amount"],
-            item["category_name"].casefold()
+    for comparison in comparisons.values():
+        comparison["items"].sort(
+            key=lambda item: (
+                item["difference_tone"] != "negative",
+                -item["actual_amount"],
+                item["category_name"].casefold()
+            )
         )
-    )
 
-    return {
-        "exists": True,
-        "comparison_type": comparison_type,
-        "items": items
-    }
+    return comparisons
 
 
 def load_report_account_activity(
@@ -3031,11 +3055,9 @@ def load_reports_data(
     db,
     user_id,
     requested_month=None,
-    comparison_type="expense",
     today=None
 ):
     """Build the complete server-rendered context for Reports."""
-    get_report_transaction_table(comparison_type)
     selected_month = parse_report_month(requested_month, today=today)
     period_start = selected_month
     period_end = shift_plan_month(selected_month, 1)
@@ -3070,7 +3092,6 @@ def load_reports_data(
         "previous_month_label": previous_month.strftime("%B %Y"),
         "previous_month_value": previous_month.strftime("%Y-%m"),
         "next_month_value": period_end.strftime("%Y-%m"),
-        "comparison_type": comparison_type,
         "summary": {
             **current_totals,
             "savings_rate": savings_rate
@@ -3104,12 +3125,11 @@ def load_reports_data(
             period_start,
             period_end
         ),
-        "plan_comparison": load_report_plan_comparison(
+        "plan_comparisons": load_report_plan_comparisons(
             db,
             user_id,
             selected_month,
-            period_end,
-            comparison_type
+            period_end
         ),
         "account_activity": load_report_account_activity(
             db,

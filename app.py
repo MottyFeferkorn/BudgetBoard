@@ -845,7 +845,6 @@ def reports():
             db,
             session["user_id"],
             requested_month=request.args.get("month"),
-            comparison_type=request.args.get("comparison", "expense"),
             today=date.today()
         )
     except ValidationError as error:
@@ -853,8 +852,7 @@ def reports():
         return redirect(
             url_for(
                 "reports",
-                month=date.today().strftime("%Y-%m"),
-                comparison="expense"
+                month=date.today().strftime("%Y-%m")
             )
         )
 

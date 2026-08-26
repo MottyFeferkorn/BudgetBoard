@@ -47,6 +47,72 @@
     {% endfor %}
 {% endmacro %}
 
+{% macro plan_comparison_table(comparison, comparison_type, selected_month_label, selected_month_value) %}
+    {% if comparison["exists"] %}
+        <div class="table-responsive reports-table-wrap">
+            <table class="table reports-plan-table align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th scope="col">Category</th>
+                        <th scope="col">Planned</th>
+                        <th scope="col">Actual</th>
+                        <th scope="col" class="text-end">Difference</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in comparison["items"] %}
+                        <tr>
+                            <th scope="row" data-label="Category">
+                                {{ item["category_name"] }}
+                                {% if item["is_unplanned"] %}
+                                    <span class="badge rounded-pill text-bg-warning ms-1">Unplanned</span>
+                                {% endif %}
+                            </th>
+                            <td data-label="Planned">{{ item["planned_amount"] | usd }}</td>
+                            <td data-label="Actual">
+                                <span class="fw-semibold">{{ item["actual_amount"] | usd }}</span>
+                                <div
+                                    class="progress reports-plan-progress mt-2"
+                                    role="progressbar"
+                                    aria-label="{{ item['category_name'] }} actual {{ comparison_type }}"
+                                    aria-valuenow="{{ item['progress_percent'] }}"
+                                    aria-valuemin="0"
+                                    aria-valuemax="100"
+                                >
+                                    <div
+                                        class="progress-bar reports-plan-{{ item['difference_tone'] }}"
+                                        style="width: {{ item['progress_percent'] }}%;"
+                                    ></div>
+                                </div>
+                            </td>
+                            <td data-label="Difference" class="text-end">
+                                <span class="reports-difference reports-difference-{{ item['difference_tone'] }}">
+                                    {{ item["difference_prefix"] }}{{ item["difference_amount"] | usd }}
+                                </span>
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td class="reports-plan-empty text-center text-secondary py-5" colspan="4">
+                                No {{ comparison_type }} categories are available for this comparison.
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="reports-empty-state text-center p-4 p-md-5 border-top">
+            <div class="reports-empty-icon mx-auto mb-2" aria-hidden="true">
+                <i class="bi bi-calendar2-plus"></i>
+            </div>
+            <p class="fw-semibold mb-1">No plan for {{ selected_month_label }}</p>
+            <p class="small text-secondary mb-3">Create a monthly plan to compare it with actual activity.</p>
+            <a class="btn btn-outline-primary" href="{{ url_for('plan', month=selected_month_value) }}">Go to Plan</a>
+        </div>
+    {% endif %}
+{% endmacro %}
+
 {% block title %}
     Reports
 {% endblock %}
@@ -66,10 +132,9 @@
                 </div>
 
                 <form class="reports-period-form align-self-stretch align-self-lg-center" action="{{ url_for('reports') }}" method="get">
-                    <input name="comparison" type="hidden" value="{{ comparison_type }}">
                     <a
                         class="btn reports-month-arrow"
-                        href="{{ url_for('reports', month=previous_month_value, comparison=comparison_type) }}"
+                        href="{{ url_for('reports', month=previous_month_value) }}"
                         aria-label="View {{ previous_month_label }} reports"
                     >
                         <i class="bi bi-chevron-left" aria-hidden="true"></i>
@@ -90,7 +155,7 @@
                     <button class="btn btn-primary reports-period-submit" type="submit">View</button>
                     <a
                         class="btn reports-month-arrow"
-                        href="{{ url_for('reports', month=next_month_value, comparison=comparison_type) }}"
+                        href="{{ url_for('reports', month=next_month_value) }}"
                         aria-label="View next month reports"
                     >
                         <i class="bi bi-chevron-right" aria-hidden="true"></i>
@@ -265,93 +330,60 @@
                     <div class="d-flex flex-column flex-md-row align-items-md-start justify-content-between gap-3 p-3 p-md-4 pb-md-3">
                         <div>
                             <h2 class="h4 fw-bold reports-heading mb-1">Plan vs Actual</h2>
-                            <p class="text-secondary mb-0">
-                                {% if comparison_type == "income" %}
-                                    See how received income compares with your monthly income plan.
-                                {% else %}
-                                    See how actual spending compares with your monthly expense plan.
-                                {% endif %}
-                            </p>
+                            <p class="text-secondary mb-0">Compare your monthly income and expense plans with actual activity.</p>
                         </div>
 
-                        <nav class="reports-plan-tabs" aria-label="Plan comparison type">
-                            <a
-                                class="reports-plan-tab {% if comparison_type == 'income' %}active{% endif %}"
-                                href="{{ url_for('reports', month=selected_month_value, comparison='income') }}"
-                                {% if comparison_type == "income" %}aria-current="page"{% endif %}
-                            >Income</a>
-                            <span class="reports-plan-tab-divider" aria-hidden="true"></span>
-                            <a
-                                class="reports-plan-tab {% if comparison_type == 'expense' %}active{% endif %}"
-                                href="{{ url_for('reports', month=selected_month_value, comparison='expense') }}"
-                                {% if comparison_type == "expense" %}aria-current="page"{% endif %}
-                            >Expenses</a>
-                        </nav>
+                        <ul class="nav nav-pills reports-plan-tabs" id="reportsPlanTabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button
+                                    class="nav-link active"
+                                    id="reports-income-tab"
+                                    data-bs-toggle="tab"
+                                    data-bs-target="#reports-income-pane"
+                                    type="button"
+                                    role="tab"
+                                    aria-controls="reports-income-pane"
+                                    aria-selected="true"
+                                >Income</button>
+                            </li>
+                            <li class="reports-plan-tab-separator" role="presentation" aria-hidden="true">
+                                <span></span>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button
+                                    class="nav-link"
+                                    id="reports-expenses-tab"
+                                    data-bs-toggle="tab"
+                                    data-bs-target="#reports-expenses-pane"
+                                    type="button"
+                                    role="tab"
+                                    aria-controls="reports-expenses-pane"
+                                    aria-selected="false"
+                                >Expenses</button>
+                            </li>
+                        </ul>
                     </div>
 
-                    {% if plan_comparison["exists"] %}
-                        <div class="table-responsive reports-table-wrap">
-                            <table class="table reports-plan-table align-middle mb-0">
-                                <thead>
-                                    <tr>
-                                        <th scope="col">Category</th>
-                                        <th scope="col">Planned</th>
-                                        <th scope="col">Actual</th>
-                                        <th scope="col" class="text-end">Difference</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for item in plan_comparison["items"] %}
-                                        <tr>
-                                            <th scope="row" data-label="Category">
-                                                {{ item["category_name"] }}
-                                                {% if item["is_unplanned"] %}
-                                                    <span class="badge rounded-pill text-bg-warning ms-1">Unplanned</span>
-                                                {% endif %}
-                                            </th>
-                                            <td data-label="Planned">{{ item["planned_amount"] | usd }}</td>
-                                            <td data-label="Actual">
-                                                <span class="fw-semibold">{{ item["actual_amount"] | usd }}</span>
-                                                <div
-                                                    class="progress reports-plan-progress mt-2"
-                                                    role="progressbar"
-                                                    aria-label="{{ item['category_name'] }} actual {{ comparison_type }}"
-                                                    aria-valuenow="{{ item['progress_percent'] }}"
-                                                    aria-valuemin="0"
-                                                    aria-valuemax="100"
-                                                >
-                                                    <div
-                                                        class="progress-bar reports-plan-{{ item['difference_tone'] }}"
-                                                        style="width: {{ item['progress_percent'] }}%;"
-                                                    ></div>
-                                                </div>
-                                            </td>
-                                            <td data-label="Difference" class="text-end">
-                                                <span class="reports-difference reports-difference-{{ item['difference_tone'] }}">
-                                                    {{ item["difference_prefix"] }}{{ item["difference_amount"] | usd }}
-                                                </span>
-                                            </td>
-                                        </tr>
-                                    {% else %}
-                                        <tr>
-                                            <td class="reports-plan-empty text-center text-secondary py-5" colspan="4">
-                                                No {{ comparison_type }} categories are available for this comparison.
-                                            </td>
-                                        </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
+                    <div class="tab-content" id="reportsPlanTabContent">
+                        <div
+                            class="tab-pane fade show active"
+                            id="reports-income-pane"
+                            role="tabpanel"
+                            aria-labelledby="reports-income-tab"
+                            tabindex="0"
+                        >
+                            {{ plan_comparison_table(plan_comparisons["income"], "income", selected_month_label, selected_month_value) }}
                         </div>
-                    {% else %}
-                        <div class="reports-empty-state text-center p-4 p-md-5 border-top">
-                            <div class="reports-empty-icon mx-auto mb-2" aria-hidden="true">
-                                <i class="bi bi-calendar2-plus"></i>
-                            </div>
-                            <p class="fw-semibold mb-1">No plan for {{ selected_month_label }}</p>
-                            <p class="small text-secondary mb-3">Create a monthly plan to compare it with actual activity.</p>
-                            <a class="btn btn-outline-primary" href="{{ url_for('plan', month=selected_month_value) }}">Go to Plan</a>
+                        <div
+                            class="tab-pane fade"
+                            id="reports-expenses-pane"
+                            role="tabpanel"
+                            aria-labelledby="reports-expenses-tab"
+                            tabindex="0"
+                        >
+                            {{ plan_comparison_table(plan_comparisons["expense"], "expense", selected_month_label, selected_month_value) }}
                         </div>
-                    {% endif %}
+                    </div>
                 </div>
             </article>
 
