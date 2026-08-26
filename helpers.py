@@ -1,4 +1,5 @@
-from datetime import date, datetime
+from calendar import monthrange
+from datetime import date, datetime, timedelta
 from decimal import Decimal, InvalidOperation
 from functools import wraps
 from urllib.parse import urlencode
@@ -948,6 +949,216 @@ def create_transaction(db, transaction_table, user_id, transaction_data):
         transaction_data["account_id"],
         transaction_data["date"]
     )
+
+
+def set_recurrent(db, transaction_table, user_id, submitted_form):
+    """Validate and save a recurring income or expense schedule."""
+    settings = get_transaction_settings(transaction_table)
+    category_type = settings["category_type"]
+
+    recurring_form = {
+        "amount": submitted_form.get("amount"),
+        "category": submitted_form.get("category"),
+        "description": submitted_form.get("description"),
+        "account_id": submitted_form.get("account_id"),
+        "date": submitted_form.get("start_date")
+    }
+    transaction_data, _, errors = validate_transaction_fields(
+        db,
+        user_id,
+        recurring_form
+    )
+
+    if errors:
+        raise ValidationError(" ".join(errors.values()))
+
+    start_date = date.fromisoformat(transaction_data["date"])
+    end_date_text = (submitted_form.get("end_date") or "").strip()
+    end_date = None
+
+    if end_date_text:
+        end_date = date.fromisoformat(
+            validate_transaction_date(end_date_text)
+        )
+
+        if end_date < start_date:
+            raise ValidationError(
+                "The end date cannot be before the start date."
+            )
+
+    frequency = (submitted_form.get("frequency") or "").strip()
+    interval_days = None
+    day_of_month = None
+
+    if frequency == "weekly":
+        interval_days = 7
+    elif frequency == "biweekly":
+        interval_days = 14
+    elif frequency == "monthly":
+        day_of_month = start_date.day
+    elif frequency == "yearly":
+        # This schema represents yearly schedules as 365-day intervals.
+        interval_days = 365
+    elif frequency == "custom":
+        try:
+            interval_days = int(submitted_form.get("interval_days"))
+        except (TypeError, ValueError) as error:
+            raise ValidationError(
+                "Enter a valid number of days between occurrences."
+            ) from error
+
+        if not 1 <= interval_days <= 365:
+            raise ValidationError(
+                "The custom interval must be between 1 and 365 days."
+            )
+    else:
+        raise ValidationError("Choose a recurring frequency.")
+
+    category_id = get_or_create_category(
+        db,
+        user_id,
+        transaction_data["category"],
+        category_type
+    )
+
+    return db.execute(
+        """
+        INSERT INTO recurring_events (
+            user_id,
+            category_id,
+            amount,
+            description,
+            account_id,
+            start_date,
+            end_date,
+            next_date,
+            interval_days,
+            day_of_month
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        user_id,
+        category_id,
+        float(transaction_data["amount"]),
+        transaction_data["description"],
+        transaction_data["account_id"],
+        start_date.isoformat(),
+        end_date.isoformat() if end_date else None,
+        start_date.isoformat(),
+        interval_days,
+        day_of_month
+    )
+
+
+def advance_recurrent_date(current_date, interval_days, day_of_month):
+    """Return the occurrence after the supplied recurring date."""
+    if interval_days is not None:
+        return current_date + timedelta(days=int(interval_days))
+
+    next_month = current_date.month + 1
+    next_year = current_date.year
+
+    if next_month == 13:
+        next_month = 1
+        next_year += 1
+
+    next_day = min(
+        int(day_of_month),
+        monthrange(next_year, next_month)[1]
+    )
+
+    return date(next_year, next_month, next_day)
+
+
+def process_recurrent_events(db, user_id, today=None):
+    """Create one user's due transactions and advance them past today."""
+    processing_date = today or date.today()
+
+    due_events = db.execute(
+        """
+        SELECT
+            recurring_events.id,
+            recurring_events.user_id,
+            recurring_events.category_id,
+            recurring_events.amount,
+            recurring_events.description,
+            recurring_events.account_id,
+            date(recurring_events.end_date) AS end_date,
+            date(recurring_events.next_date) AS next_date,
+            recurring_events.interval_days,
+            recurring_events.day_of_month,
+            categories.type AS category_type
+        FROM recurring_events
+        JOIN categories
+          ON categories.id = recurring_events.category_id
+         AND categories.user_id = recurring_events.user_id
+        WHERE recurring_events.user_id = ?
+          AND date(recurring_events.next_date) <= date(?)
+          AND (
+                recurring_events.end_date IS NULL
+                OR date(recurring_events.next_date) <=
+                   date(recurring_events.end_date)
+          )
+        ORDER BY recurring_events.next_date, recurring_events.id
+        """,
+        user_id,
+        processing_date.isoformat()
+    )
+
+    created_count = 0
+
+    for event in due_events:
+        next_date = date.fromisoformat(event["next_date"])
+        end_date = (
+            date.fromisoformat(event["end_date"])
+            if event["end_date"]
+            else None
+        )
+
+        while (
+            next_date <= processing_date
+            and (end_date is None or next_date <= end_date)
+        ):
+            transaction_table = (
+                "income"
+                if event["category_type"] == "income"
+                else "expenses"
+            )
+
+            create_transaction(
+                db,
+                transaction_table,
+                event["user_id"],
+                {
+                    "amount": event["amount"],
+                    "category_id": event["category_id"],
+                    "description": event["description"],
+                    "account_id": event["account_id"],
+                    "date": next_date.isoformat()
+                }
+            )
+            created_count += 1
+
+            next_date = advance_recurrent_date(
+                next_date,
+                event["interval_days"],
+                event["day_of_month"]
+            )
+
+        db.execute(
+            """
+            UPDATE recurring_events
+            SET next_date = ?,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = ?
+              AND user_id = ?
+            """,
+            next_date.isoformat(),
+            event["id"],
+            user_id
+        )
+
+    return created_count
 
 
 def update_transaction(

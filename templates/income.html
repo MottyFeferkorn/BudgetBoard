@@ -444,31 +444,31 @@
                     </div>
                     <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <form>
+                <form action="{{ transaction_page_url }}" method="post">
                     <div class="modal-body px-4 py-3">
                         <div class="row g-3">
                             <div class="col-md-6">
                                 <label class="form-label fw-medium" for="recurring-amount">Amount</label>
                                 <div class="input-group">
                                     <span class="input-group-text">$</span>
-                                    <input class="form-control" id="recurring-amount" type="number" min="0" step="0.01" placeholder="0.00" required>
+                                    <input class="form-control" id="recurring-amount" name="amount" type="number" min="0.01" step="0.01" placeholder="0.00" required>
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label fw-medium" for="recurring-category">Category</label>
-                                <input class="form-control" id="recurring-category" type="text" list="income-category-options" placeholder="Choose or enter a category" autocomplete="off" required>
+                                <input class="form-control" id="recurring-category" name="category" type="text" list="income-category-options" maxlength="50" placeholder="Choose or enter a category" autocomplete="off" required>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label fw-medium" for="recurring-description">Description</label>
-                                <input class="form-control" id="recurring-description" type="text" placeholder="For example, paycheck" autocomplete="off" required>
+                                <input class="form-control" id="recurring-description" name="description" type="text" maxlength="150" placeholder="For example, paycheck" autocomplete="off">
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label fw-medium" for="recurring-account">Account</label>
-                                <select class="form-select" id="recurring-account" required>
+                                <select class="form-select" id="recurring-account" name="account_id" required>
                                     <option value="" selected disabled>Select account</option>
-                                    <option>Main Checking</option>
-                                    <option>Savings</option>
-                                    <option>Cash</option>
+                                    {% for account in accounts %}
+                                        <option value="{{ account['id'] }}">{{ account["name"] }}</option>
+                                    {% endfor %}
                                 </select>
                             </div>
                             <div class="col-12">
@@ -495,6 +495,7 @@
                                             <input
                                                 class="form-control text-center"
                                                 id="recurring-interval"
+                                                name="interval_days"
                                                 type="number"
                                                 min="1"
                                                 max="365"
@@ -509,17 +510,17 @@
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label fw-medium" for="recurring-start-date">Start date</label>
-                                <input class="form-control" id="recurring-start-date" type="date" value="2026-08-21" required>
+                                <input class="form-control" id="recurring-start-date" name="start_date" type="date" value="{{ form_data['date'] }}" required>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label fw-medium" for="recurring-end-date">End date <span class="text-secondary fw-normal">(optional)</span></label>
-                                <input class="form-control" id="recurring-end-date" type="date">
+                                <input class="form-control" id="recurring-end-date" name="end_date" type="date">
                             </div>
                         </div>
                     </div>
                     <div class="modal-footer border-0 px-4 pt-2 pb-4">
                         <button class="btn btn-light px-4" type="button" data-bs-dismiss="modal">Cancel</button>
-                        <button class="btn btn-primary px-4" type="submit">Set up income</button>
+                        <button class="btn btn-primary px-4" name="action" type="submit" value="recurrent">Set up income</button>
                     </div>
                 </form>
             </div>

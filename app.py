@@ -26,6 +26,8 @@ from helpers import (
     remove_budget_plan_item,
     shift_plan_month,
     set_account_active,
+    set_recurrent,
+    process_recurrent_events,
     transaction_page,
     update_account,
     update_budget_plan_item,
@@ -408,6 +410,26 @@ def plan():
 @app.route("/income/<limit>", methods=["GET", "POST"])
 @login_required
 def income(limit):
+    action = (request.form.get("action") or "").strip()
+
+    if request.method == "POST" and action == "recurrent":
+        try:
+            set_recurrent(
+                db,
+                "income",
+                session["user_id"],
+                request.form
+            )
+        except ValidationError as error:
+            flash(str(error), "danger")
+
+        return redirect(
+            url_for("income", limit=limit, _external=True)
+        )
+
+    if request.method == "GET":
+        process_recurrent_events(db, session["user_id"])
+
     # Plug the Income route into the shared transaction-page backend.
     return transaction_page(db, "income", limit)
 
@@ -416,6 +438,26 @@ def income(limit):
 @app.route("/expenses/<limit>", methods=["GET", "POST"])
 @login_required
 def expenses(limit):
+    action = (request.form.get("action") or "").strip()
+
+    if request.method == "POST" and action == "recurrent":
+        try:
+            set_recurrent(
+                db,
+                "expenses",
+                session["user_id"],
+                request.form
+            )
+        except ValidationError as error:
+            flash(str(error), "danger")
+
+        return redirect(
+            url_for("expenses", limit=limit, _external=True)
+        )
+
+    if request.method == "GET":
+        process_recurrent_events(db, session["user_id"])
+
     # Plug the Expenses route into the same backend with its own table and UI.
     return transaction_page(db, "expenses", limit)
 
