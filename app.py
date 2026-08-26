@@ -192,6 +192,7 @@ def login():
     return redirect("/")
 
 @app.route("/logout")
+@login_required
 def logout():
     # Remove all authentication data and return to the public landing page.
     session.clear()
