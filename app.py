@@ -442,7 +442,10 @@ def income(limit):
             flash(str(error), "danger")
 
         return redirect(
-            url_for("income", limit=limit, _external=True)
+            url_for("income")
+            if limit == "10"
+            else url_for("income", limit=limit),
+            code=303
         )
 
     if request.method == "GET":
@@ -470,7 +473,10 @@ def expenses(limit):
             flash(str(error), "danger")
 
         return redirect(
-            url_for("expenses", limit=limit, _external=True)
+            url_for("expenses")
+            if limit == "10"
+            else url_for("expenses", limit=limit),
+            code=303
         )
 
     if request.method == "GET":

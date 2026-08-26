@@ -2092,15 +2092,15 @@ def delete_transaction(db, transaction_table, user_id, transaction_id):
 
 
 def build_transaction_page_url(endpoint, current_limit, query_arguments):
-    """Build an absolute page URL while retaining active filters."""
+    """Build a canonical page URL while retaining active filters."""
     arguments = query_arguments.to_dict(flat=False)
     arguments.pop("added", None)
     query = urlencode(arguments, doseq=True)
-    path = url_for(
-        endpoint,
-        limit=current_limit,
-        _external=True
-    )
+
+    if current_limit == 10:
+        path = url_for(endpoint)
+    else:
+        path = url_for(endpoint, limit=current_limit)
 
     return f"{path}?{query}" if query else path
 
@@ -2122,27 +2122,6 @@ def transaction_page(db, transaction_table, limit):
         request.args
     )
 
-    accounts = db.execute(
-        """
-        SELECT id, name
-        FROM accounts
-        WHERE user_id = ?
-          AND active = 1
-        ORDER BY name COLLATE NOCASE
-        """,
-        user_id
-    )
-    categories = db.execute(
-        """
-        SELECT id, name
-        FROM categories
-        WHERE user_id = ?
-          AND type = ?
-        ORDER BY name
-        """,
-        user_id,
-        category_type
-    )
     errors = {}
     form_data = {
         "amount": "",
@@ -2179,11 +2158,11 @@ def transaction_page(db, transaction_table, limit):
             except ValidationError as error:
                 flash(str(error), "danger")
 
-            return redirect(transaction_page_url)
+            return redirect(transaction_page_url, code=303)
 
         if action not in ("add_transaction", "update_transaction"):
             flash("Choose a valid transaction action.", "danger")
-            return redirect(transaction_page_url)
+            return redirect(transaction_page_url, code=303)
 
         transaction_id = None
         if action == "update_transaction":
@@ -2200,7 +2179,7 @@ def transaction_page(db, transaction_table, limit):
                 )
             except ValidationError as error:
                 flash(str(error), "danger")
-                return redirect(transaction_page_url)
+                return redirect(transaction_page_url, code=303)
 
         transaction_data, form_data, errors = validate_transaction_fields(
             db,
@@ -2221,7 +2200,7 @@ def transaction_page(db, transaction_table, limit):
 
         if errors and action == "update_transaction":
             flash(" ".join(errors.values()), "danger")
-            return redirect(transaction_page_url)
+            return redirect(transaction_page_url, code=303)
 
         if not errors:
             if action == "add_transaction":
@@ -2242,7 +2221,29 @@ def transaction_page(db, transaction_table, limit):
                 )
                 flash(f"{label} updated.", "success")
 
-            return redirect(success_url)
+            return redirect(success_url, code=303)
+
+    accounts = db.execute(
+        """
+        SELECT id, name
+        FROM accounts
+        WHERE user_id = ?
+          AND active = 1
+        ORDER BY name COLLATE NOCASE
+        """,
+        user_id
+    )
+    categories = db.execute(
+        """
+        SELECT id, name
+        FROM categories
+        WHERE user_id = ?
+          AND type = ?
+        ORDER BY name
+        """,
+        user_id,
+        category_type
+    )
 
     search = (request.args.get("q") or "").strip()
     start_date = (request.args.get("start") or "").strip()
