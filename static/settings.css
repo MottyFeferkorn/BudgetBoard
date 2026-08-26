@@ -258,10 +258,17 @@
 .settings-category-row-editing {
     display: grid;
     grid-template-columns: auto minmax(8rem, 1fr) auto;
+    grid-template-areas: "delete name actions";
     background-color: #fbfcfd;
 }
 
+.settings-category-edit-field {
+    grid-area: name;
+    min-width: 0;
+}
+
 .settings-category-edit-actions {
+    grid-area: actions;
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -273,6 +280,7 @@
 }
 
 .settings-category-delete-button {
+    grid-area: delete;
     color: #dc3545;
 }
 
@@ -287,6 +295,30 @@
 .settings-category-footer {
     padding: 1rem 1.25rem;
     background-color: #fbfcfd;
+}
+
+.settings-add-category-form {
+    display: grid;
+    grid-template-columns: minmax(8rem, 1fr) auto auto;
+    gap: 0.5rem;
+}
+
+.settings-empty-state {
+    padding: 2rem 1.25rem;
+    border-bottom: 1px solid #edf0f2;
+    background-color: #fbfcfd;
+    text-align: center;
+}
+
+.settings-empty-state > i {
+    display: grid;
+    width: 2.75rem;
+    height: 2.75rem;
+    margin: 0 auto 0.75rem;
+    place-items: center;
+    border-radius: 0.8rem;
+    background-color: rgba(13, 110, 253, 0.09);
+    color: #0d6efd;
 }
 
 .settings-recurring-list {
@@ -358,6 +390,7 @@
 
 .settings-recurring-row-editing {
     grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas: "delete fields actions";
     align-items: start;
     gap: 1rem;
     padding-top: 1.25rem;
@@ -366,10 +399,12 @@
 }
 
 .settings-recurring-delete-button {
+    grid-area: delete;
     color: #dc3545;
 }
 
 .settings-recurring-edit-fields {
+    grid-area: fields;
     min-width: 0;
 }
 
@@ -412,6 +447,7 @@
 }
 
 .settings-recurring-edit-actions {
+    grid-area: actions;
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -496,12 +532,18 @@
 
     .settings-category-row-editing {
         grid-template-columns: auto minmax(0, 1fr);
+        grid-template-areas:
+            "delete name"
+            ". actions";
         gap: 0.65rem;
     }
 
     .settings-category-edit-actions {
-        grid-column: 2;
         justify-content: flex-end;
+    }
+
+    .settings-add-category-form {
+        grid-template-columns: minmax(0, 1fr) auto auto;
     }
 
     .settings-row-button {
@@ -530,14 +572,26 @@
 
     .settings-recurring-row-editing {
         grid-template-columns: auto minmax(0, 1fr);
+        grid-template-areas:
+            "delete fields"
+            ". actions";
     }
 
     .settings-recurring-edit-fields {
-        grid-column: 1 / -1;
+        min-width: 0;
     }
 
     .settings-recurring-edit-actions {
-        grid-column: 1 / -1;
         justify-content: flex-end;
+    }
+}
+
+@media (max-width: 420px) {
+    .settings-add-category-form {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .settings-add-category-form .settings-category-input {
+        grid-column: 1 / -1;
     }
 }

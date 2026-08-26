@@ -67,21 +67,59 @@
             box-shadow: 0 0.75rem 2rem rgba(33, 37, 41, 0.14);
         }
 
-        .dashboard-add-options a {
+        .dashboard-add-option {
             display: flex;
+            width: 100%;
             align-items: center;
             gap: 0.65rem;
             padding: 0.65rem 0.75rem;
             color: #343a40;
+            background-color: transparent;
+            border: 0;
             border-radius: 0.55rem;
             text-decoration: none;
+            text-align: left;
             font-size: 0.9rem;
             font-weight: 500;
         }
 
-        .dashboard-add-options a:hover,
-        .dashboard-add-options a:focus {
+        .dashboard-add-option:hover,
+        .dashboard-add-option:focus {
             background-color: #f8f9fa;
+        }
+
+        .dashboard-modal-content {
+            overflow: hidden;
+            border: 0;
+            border-radius: 1rem;
+            box-shadow: 0 1.25rem 3rem rgba(33, 37, 41, 0.16);
+        }
+
+        .dashboard-modal-content .form-control,
+        .dashboard-modal-content .form-select,
+        .dashboard-modal-content .input-group-text {
+            min-height: 2.75rem;
+            border-color: #dee2e6;
+        }
+
+        .dashboard-modal-content .form-control,
+        .dashboard-modal-content .form-select {
+            border-radius: 0.7rem;
+        }
+
+        .dashboard-modal-content .input-group > .input-group-text {
+            border-radius: 0.7rem 0 0 0.7rem;
+            background-color: #f8f9fa;
+        }
+
+        .dashboard-modal-content .input-group > .form-control {
+            border-radius: 0 0.7rem 0.7rem 0;
+        }
+
+        .dashboard-modal-button {
+            min-height: 2.65rem;
+            border-radius: 0.7rem;
+            font-weight: 600;
         }
 
         .dashboard-summary-card {
@@ -306,14 +344,24 @@
                         <i class="bi bi-chevron-down small ms-1" aria-hidden="true"></i>
                     </summary>
                     <div class="dashboard-add-options">
-                        <a href="#" aria-label="Add income">
+                        <button
+                            class="dashboard-add-option"
+                            type="button"
+                            data-bs-toggle="modal"
+                            data-bs-target="#dashboardIncomeModal"
+                        >
                             <i class="bi bi-arrow-down-circle text-success" aria-hidden="true"></i>
                             Add Income
-                        </a>
-                        <a href="#" aria-label="Add expense">
+                        </button>
+                        <button
+                            class="dashboard-add-option"
+                            type="button"
+                            data-bs-toggle="modal"
+                            data-bs-target="#dashboardExpenseModal"
+                        >
                             <i class="bi bi-arrow-up-circle text-danger" aria-hidden="true"></i>
                             Add Expense
-                        </a>
+                        </button>
                     </div>
                 </details>
             </header>
@@ -678,4 +726,222 @@
             </section>
         </div>
     </section>
+
+    <div class="modal fade" id="dashboardIncomeModal" tabindex="-1" aria-labelledby="dashboardIncomeModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content dashboard-modal-content">
+                <div class="modal-header border-0 px-4 pt-4 pb-2">
+                    <div>
+                        <h2 class="modal-title h4 fw-bold" id="dashboardIncomeModalLabel">Add income</h2>
+                        <p class="text-secondary small mb-0">Record money you have received.</p>
+                    </div>
+                    <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <form action="{{ url_for('income') }}" method="post">
+                    <input name="action" type="hidden" value="add_transaction">
+                    <input name="return_to" type="hidden" value="dashboard">
+
+                    <div class="modal-body px-4 py-3">
+                        <div class="mb-3">
+                            <label class="form-label fw-medium" for="dashboard-income-amount">Amount</label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input
+                                    class="form-control"
+                                    id="dashboard-income-amount"
+                                    name="amount"
+                                    type="number"
+                                    min="0.01"
+                                    step="0.01"
+                                    value="{{ add_form_data['amount'] }}"
+                                    placeholder="0.00"
+                                    required
+                                >
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-medium" for="dashboard-income-category">Category</label>
+                            <input
+                                class="form-control"
+                                id="dashboard-income-category"
+                                name="category"
+                                type="text"
+                                list="dashboard-income-category-options"
+                                maxlength="50"
+                                value="{{ add_form_data['category'] }}"
+                                placeholder="Choose or enter a category"
+                                autocomplete="off"
+                                required
+                            >
+                            <datalist id="dashboard-income-category-options">
+                                {% for category in income_categories %}
+                                    <option value="{{ category['name'] }}"></option>
+                                {% endfor %}
+                            </datalist>
+                            <div class="form-text">Previous income categories appear as suggestions.</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-medium" for="dashboard-income-description">
+                                Description <span class="text-secondary fw-normal">(optional)</span>
+                            </label>
+                            <input
+                                class="form-control"
+                                id="dashboard-income-description"
+                                name="description"
+                                type="text"
+                                maxlength="150"
+                                value="{{ add_form_data['description'] }}"
+                                placeholder="For example, August paycheck"
+                            >
+                        </div>
+
+                        <div class="row g-3">
+                            <div class="col-sm-6">
+                                <label class="form-label fw-medium" for="dashboard-income-account">Account</label>
+                                <select class="form-select" id="dashboard-income-account" name="account_id" required>
+                                    <option value="" selected disabled>Select account</option>
+                                    {% for account in accounts %}
+                                        <option value="{{ account['id'] }}">{{ account["name"] }}</option>
+                                    {% endfor %}
+                                </select>
+                                {% if not accounts %}
+                                    <div class="form-text text-danger">Add an account before recording income.</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-sm-6">
+                                <label class="form-label fw-medium" for="dashboard-income-date">Date</label>
+                                <input
+                                    class="form-control"
+                                    id="dashboard-income-date"
+                                    name="date"
+                                    type="date"
+                                    value="{{ add_form_data['date'] }}"
+                                    required
+                                >
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="modal-footer border-0 px-4 pt-2 pb-4">
+                        <button class="btn btn-light dashboard-modal-button px-4" type="button" data-bs-dismiss="modal">Cancel</button>
+                        <button class="btn btn-primary dashboard-modal-button px-4" type="submit" {% if not accounts %}disabled{% endif %}>
+                            Add income
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="dashboardExpenseModal" tabindex="-1" aria-labelledby="dashboardExpenseModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content dashboard-modal-content">
+                <div class="modal-header border-0 px-4 pt-4 pb-2">
+                    <div>
+                        <h2 class="modal-title h4 fw-bold" id="dashboardExpenseModalLabel">Add expense</h2>
+                        <p class="text-secondary small mb-0">Record money you have spent.</p>
+                    </div>
+                    <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <form action="{{ url_for('expenses') }}" method="post">
+                    <input name="action" type="hidden" value="add_transaction">
+                    <input name="return_to" type="hidden" value="dashboard">
+
+                    <div class="modal-body px-4 py-3">
+                        <div class="mb-3">
+                            <label class="form-label fw-medium" for="dashboard-expense-amount">Amount</label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input
+                                    class="form-control"
+                                    id="dashboard-expense-amount"
+                                    name="amount"
+                                    type="number"
+                                    min="0.01"
+                                    step="0.01"
+                                    value="{{ add_form_data['amount'] }}"
+                                    placeholder="0.00"
+                                    required
+                                >
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-medium" for="dashboard-expense-category">Category</label>
+                            <input
+                                class="form-control"
+                                id="dashboard-expense-category"
+                                name="category"
+                                type="text"
+                                list="dashboard-expense-category-options"
+                                maxlength="50"
+                                value="{{ add_form_data['category'] }}"
+                                placeholder="Choose or enter a category"
+                                autocomplete="off"
+                                required
+                            >
+                            <datalist id="dashboard-expense-category-options">
+                                {% for category in expense_categories %}
+                                    <option value="{{ category['name'] }}"></option>
+                                {% endfor %}
+                            </datalist>
+                            <div class="form-text">Previous expense categories appear as suggestions.</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-medium" for="dashboard-expense-description">
+                                Description <span class="text-secondary fw-normal">(optional)</span>
+                            </label>
+                            <input
+                                class="form-control"
+                                id="dashboard-expense-description"
+                                name="description"
+                                type="text"
+                                maxlength="150"
+                                value="{{ add_form_data['description'] }}"
+                                placeholder="For example, weekly groceries"
+                            >
+                        </div>
+
+                        <div class="row g-3">
+                            <div class="col-sm-6">
+                                <label class="form-label fw-medium" for="dashboard-expense-account">Account</label>
+                                <select class="form-select" id="dashboard-expense-account" name="account_id" required>
+                                    <option value="" selected disabled>Select account</option>
+                                    {% for account in accounts %}
+                                        <option value="{{ account['id'] }}">{{ account["name"] }}</option>
+                                    {% endfor %}
+                                </select>
+                                {% if not accounts %}
+                                    <div class="form-text text-danger">Add an account before recording an expense.</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-sm-6">
+                                <label class="form-label fw-medium" for="dashboard-expense-date">Date</label>
+                                <input
+                                    class="form-control"
+                                    id="dashboard-expense-date"
+                                    name="date"
+                                    type="date"
+                                    value="{{ add_form_data['date'] }}"
+                                    required
+                                >
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="modal-footer border-0 px-4 pt-2 pb-4">
+                        <button class="btn btn-light dashboard-modal-button px-4" type="button" data-bs-dismiss="modal">Cancel</button>
+                        <button class="btn btn-primary dashboard-modal-button px-4" type="submit" {% if not accounts %}disabled{% endif %}>
+                            Add expense
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 {% endblock %}

@@ -1,5 +1,5 @@
 import re
-from datetime import date
+from datetime import date, datetime
 
 from cs50 import SQL
 from flask import Flask, flash, redirect, render_template, request, session, url_for
@@ -13,11 +13,14 @@ from helpers import (
     change_plan_item_category,
     create_account,
     create_budget_plan,
+    delete_category,
+    delete_recurrent_event,
     get_budget_plan,
     get_or_create_category,
     load_budget_plan_items,
     load_accounts,
     load_saved_plan_months,
+    load_recurrent_events,
     load_user_categories,
     login_required,
     organize_plan_items,
@@ -28,9 +31,11 @@ from helpers import (
     set_account_active,
     set_recurrent,
     process_recurrent_events,
+    rename_category,
     transaction_page,
     update_account,
     update_budget_plan_item,
+    update_recurrent_event,
     usd,
     validate_plan_amount
 )
@@ -58,10 +63,40 @@ db = SQL("sqlite:///budget.db")
 
 @app.route("/")
 def index():
-    # Show the dashboard to signed-in users and the landing page to visitors.
-    if session:
-        return render_template("index.html")
-    return render_template("home.html")
+    """Show the dashboard to signed-in users and the landing page to visitors."""
+    user_id = session.get("user_id")
+
+    if not user_id:
+        return render_template("home.html")
+
+    # Reuse the account and category loaders for the Dashboard add forms.
+    accounts, _, _, _ = load_accounts(db, user_id, 1)
+    categories = load_user_categories(db, user_id)
+    income_categories = [
+        category
+        for category in categories
+        if category["type"] == "income"
+    ]
+    expense_categories = [
+        category
+        for category in categories
+        if category["type"] == "expense"
+    ]
+    add_form_data = {
+        "amount": "",
+        "category": "",
+        "description": "",
+        "account_id": "",
+        "date": date.today().isoformat()
+    }
+
+    return render_template(
+        "index.html",
+        accounts=accounts,
+        income_categories=income_categories,
+        expense_categories=expense_categories,
+        add_form_data=add_form_data
+    )
 
 @app.route("/register", methods=["GET", "POST"])
 def register():
@@ -462,6 +497,275 @@ def expenses(limit):
     return transaction_page(db, "expenses", limit)
 
 
+@app.route("/settings", methods=["GET", "POST"])
+@login_required
+def settings():
+    """Display and update the signed-in user's settings."""
+    user_id = session["user_id"]
+
+    if request.method == "POST":
+        action = (request.form.get("action") or "").strip()
+        active_section = "account"
+        category_type = (
+            request.form.get("category_type") or "income"
+        ).strip()
+        recurring_type = (
+            request.form.get("recurring_type") or "income"
+        ).strip()
+        redirect_arguments = {}
+
+        try:
+            if action == "update_email":
+                email = (request.form.get("email") or "").strip()
+
+                if not email:
+                    raise ValidationError("Email address is required.")
+
+                if not re.fullmatch(
+                    r"^[^\s@]+@[^\s@]+\.[^\s@]{2,}$",
+                    email
+                ):
+                    raise ValidationError(
+                        "Please enter a valid email address."
+                    )
+
+                try:
+                    db.execute(
+                        """
+                        UPDATE users
+                        SET username = ?
+                        WHERE id = ?
+                        """,
+                        email,
+                        user_id
+                    )
+                except ValueError as error:
+                    raise ValidationError(
+                        "An account with this email already exists."
+                    ) from error
+
+                session["username"] = email
+
+            elif action == "change_password":
+                current_password = (
+                    request.form.get("current_password") or ""
+                )
+                new_password = request.form.get("new_password") or ""
+                confirmation = request.form.get("confirmation") or ""
+                users = db.execute(
+                    "SELECT hash FROM users WHERE id = ?",
+                    user_id
+                )
+
+                if (
+                    not users
+                    or not check_password_hash(
+                        users[0]["hash"],
+                        current_password
+                    )
+                ):
+                    raise ValidationError(
+                        "Current password is incorrect."
+                    )
+
+                if len(new_password) < 8:
+                    raise ValidationError(
+                        "New password must contain at least 8 characters."
+                    )
+
+                if new_password != confirmation:
+                    raise ValidationError(
+                        "The new passwords do not match."
+                    )
+
+                password_hash = generate_password_hash(
+                    new_password,
+                    method="pbkdf2:sha256"
+                )
+                db.execute(
+                    "UPDATE users SET hash = ? WHERE id = ?",
+                    password_hash,
+                    user_id
+                )
+
+            elif action == "add_category":
+                active_section = "categories"
+
+                if category_type not in {"income", "expense"}:
+                    raise ValidationError(
+                        "Choose a valid category type."
+                    )
+
+                get_or_create_category(
+                    db,
+                    user_id,
+                    request.form.get("category_name"),
+                    category_type
+                )
+
+            elif action == "rename_category":
+                active_section = "categories"
+                rename_category(
+                    db,
+                    user_id,
+                    request.form.get("category_id"),
+                    request.form.get("category_name")
+                )
+
+            elif action == "delete_category":
+                active_section = "categories"
+                category_type = delete_category(
+                    db,
+                    user_id,
+                    request.form.get("category_id")
+                )
+
+            elif action == "update_recurrent":
+                active_section = "recurring"
+                recurring_type = update_recurrent_event(
+                    db,
+                    user_id,
+                    request.form.get("recurring_event_id"),
+                    request.form
+                )
+
+            elif action == "delete_recurrent":
+                active_section = "recurring"
+                recurring_type = delete_recurrent_event(
+                    db,
+                    user_id,
+                    request.form.get("recurring_event_id")
+                )
+
+            else:
+                raise ValidationError("Choose a valid settings action.")
+
+        except ValidationError as error:
+            flash(str(error), "danger")
+
+            if action == "update_email":
+                redirect_arguments["edit"] = "account"
+            elif action in {"rename_category", "delete_category"}:
+                redirect_arguments["edit_category"] = (
+                    request.form.get("category_id")
+                )
+            elif action == "add_category":
+                redirect_arguments["add_category"] = category_type
+            elif action in {"update_recurrent", "delete_recurrent"}:
+                redirect_arguments["edit_recurrent"] = (
+                    request.form.get("recurring_event_id")
+                )
+
+        redirect_arguments["section"] = active_section
+
+        if active_section == "categories":
+            redirect_arguments["category_type"] = category_type
+
+        if active_section == "recurring":
+            redirect_arguments["recurring_type"] = recurring_type
+
+        return redirect(
+            url_for(
+                "settings",
+                **redirect_arguments,
+                _external=True
+            )
+        )
+
+    users = db.execute(
+        """
+        SELECT id, username, time_added
+        FROM users
+        WHERE id = ?
+        LIMIT 1
+        """,
+        user_id
+    )
+
+    if not users:
+        session.clear()
+        return redirect(url_for("login", _external=True))
+
+    user = users[0]
+
+    try:
+        member_since = datetime.fromisoformat(
+            user["time_added"]
+        ).strftime("%B %Y")
+    except (TypeError, ValueError):
+        member_since = ""
+
+    categories = load_user_categories(db, user_id)
+    income_categories = [
+        category
+        for category in categories
+        if category["type"] == "income"
+    ]
+    expense_categories = [
+        category
+        for category in categories
+        if category["type"] == "expense"
+    ]
+    accounts = db.execute(
+        """
+        SELECT id, name, active
+        FROM accounts
+        WHERE user_id = ?
+        ORDER BY active DESC, name COLLATE NOCASE
+        """,
+        user_id
+    )
+    recurrent_events = load_recurrent_events(db, user_id)
+    recurrent_income = [
+        event
+        for event in recurrent_events
+        if event["category_type"] == "income"
+    ]
+    recurrent_expenses = [
+        event
+        for event in recurrent_events
+        if event["category_type"] == "expense"
+    ]
+    active_section = request.args.get("section", "account")
+
+    if active_section not in {"account", "categories", "recurring"}:
+        active_section = "account"
+
+    active_category_type = request.args.get(
+        "category_type",
+        "income"
+    )
+
+    if active_category_type not in {"income", "expense"}:
+        active_category_type = "income"
+
+    active_recurring_type = request.args.get(
+        "recurring_type",
+        "income"
+    )
+
+    if active_recurring_type not in {"income", "expense"}:
+        active_recurring_type = "income"
+
+    return render_template(
+        "settings.html",
+        user=user,
+        member_since=member_since,
+        accounts=accounts,
+        income_categories=income_categories,
+        expense_categories=expense_categories,
+        recurrent_income=recurrent_income,
+        recurrent_expenses=recurrent_expenses,
+        active_section=active_section,
+        active_category_type=active_category_type,
+        active_recurring_type=active_recurring_type,
+        edit_account=request.args.get("edit") == "account",
+        edit_category_id=request.args.get("edit_category", type=int),
+        adding_category_type=request.args.get("add_category"),
+        edit_recurrent_id=request.args.get("edit_recurrent", type=int)
+    )
+
+
 @app.route("/accounts", methods=["GET", "POST"])
 @login_required
 def accounts():
@@ -550,7 +854,3 @@ def accounts():
         accounts_url=accounts_url,
         account_filter_url=account_filter_url
     )
-
-@app.route("/settings")
-def settings():
-    return render_template("settings.html")

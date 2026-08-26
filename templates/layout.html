@@ -98,12 +98,12 @@
 
                                 <div class="dropdown-divider"></div>
 
-                                <a class="dropdown-item profile-menu-item" href="/account">
+                                <a class="dropdown-item profile-menu-item" href="{{ url_for('settings', section='account') }}">
                                     <i class="bi bi-person"></i>
                                     <span>My account</span>
                                 </a>
 
-                                <a class="dropdown-item profile-menu-item" href="/settings">
+                                <a class="dropdown-item profile-menu-item" href="{{ url_for('settings') }}">
                                     <i class="bi bi-gear"></i>
                                     <span>Settings</span>
                                 </a>

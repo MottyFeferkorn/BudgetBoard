@@ -144,6 +144,80 @@ def rename_category(db, user_id, category_id, new_name):
         ) from error
 
 
+def delete_category(db, user_id, category_id):
+    """Delete an unused category belonging to the user."""
+    category_id = parse_record_id(category_id, "category")
+    categories = db.execute(
+        """
+        SELECT id, type
+        FROM categories
+        WHERE id = ?
+          AND user_id = ?
+        LIMIT 1
+        """,
+        category_id,
+        user_id
+    )
+
+    if not categories:
+        raise ValidationError("Category not found.")
+
+    usage = db.execute(
+        """
+        SELECT
+            EXISTS(
+                SELECT 1
+                FROM income
+                WHERE category_id = ?
+                  AND user_id = ?
+            )
+            OR EXISTS(
+                SELECT 1
+                FROM expenses
+                WHERE category_id = ?
+                  AND user_id = ?
+            )
+            OR EXISTS(
+                SELECT 1
+                FROM budget_plan_items
+                JOIN budget_plans
+                  ON budget_plans.id = budget_plan_items.plan_id
+                WHERE budget_plan_items.category_id = ?
+                  AND budget_plans.user_id = ?
+            )
+            OR EXISTS(
+                SELECT 1
+                FROM recurring_events
+                WHERE category_id = ?
+                  AND user_id = ?
+            ) AS is_used
+        """,
+        category_id,
+        user_id,
+        category_id,
+        user_id,
+        category_id,
+        user_id,
+        category_id,
+        user_id
+    )[0]
+
+    if usage["is_used"]:
+        raise ValidationError("This category is currently in use.")
+
+    db.execute(
+        """
+        DELETE FROM categories
+        WHERE id = ?
+          AND user_id = ?
+        """,
+        category_id,
+        user_id
+    )
+
+    return categories[0]["type"]
+
+
 def parse_plan_month(value):
     """Convert an HTML YYYY-MM value to the first day of that month."""
     value = (value or "").strip()
@@ -951,6 +1025,39 @@ def create_transaction(db, transaction_table, user_id, transaction_data):
     )
 
 
+def validate_recurrent_schedule(submitted_form, start_date):
+    """Validate frequency fields and return the database schedule."""
+    frequency = (submitted_form.get("frequency") or "").strip()
+    interval_days = None
+    day_of_month = None
+
+    if frequency == "weekly":
+        interval_days = 7
+    elif frequency == "biweekly":
+        interval_days = 14
+    elif frequency == "monthly":
+        day_of_month = start_date.day
+    elif frequency == "yearly":
+        # The current schema represents yearly schedules as 365 days.
+        interval_days = 365
+    elif frequency == "custom":
+        try:
+            interval_days = int(submitted_form.get("interval_days"))
+        except (TypeError, ValueError) as error:
+            raise ValidationError(
+                "Enter a valid number of days between occurrences."
+            ) from error
+
+        if not 1 <= interval_days <= 365:
+            raise ValidationError(
+                "The custom interval must be between 1 and 365 days."
+            )
+    else:
+        raise ValidationError("Choose a recurring frequency.")
+
+    return interval_days, day_of_month
+
+
 def set_recurrent(db, transaction_table, user_id, submitted_form):
     """Validate and save a recurring income or expense schedule."""
     settings = get_transaction_settings(transaction_table)
@@ -986,33 +1093,10 @@ def set_recurrent(db, transaction_table, user_id, submitted_form):
                 "The end date cannot be before the start date."
             )
 
-    frequency = (submitted_form.get("frequency") or "").strip()
-    interval_days = None
-    day_of_month = None
-
-    if frequency == "weekly":
-        interval_days = 7
-    elif frequency == "biweekly":
-        interval_days = 14
-    elif frequency == "monthly":
-        day_of_month = start_date.day
-    elif frequency == "yearly":
-        # This schema represents yearly schedules as 365-day intervals.
-        interval_days = 365
-    elif frequency == "custom":
-        try:
-            interval_days = int(submitted_form.get("interval_days"))
-        except (TypeError, ValueError) as error:
-            raise ValidationError(
-                "Enter a valid number of days between occurrences."
-            ) from error
-
-        if not 1 <= interval_days <= 365:
-            raise ValidationError(
-                "The custom interval must be between 1 and 365 days."
-            )
-    else:
-        raise ValidationError("Choose a recurring frequency.")
+    interval_days, day_of_month = validate_recurrent_schedule(
+        submitted_form,
+        start_date
+    )
 
     category_id = get_or_create_category(
         db,
@@ -1161,6 +1245,322 @@ def process_recurrent_events(db, user_id, today=None):
     return created_count
 
 
+def get_owned_recurrent_event(db, user_id, recurring_event_id):
+    """Return a recurring event only when it belongs to the user."""
+    recurring_event_id = parse_record_id(
+        recurring_event_id,
+        "recurring event"
+    )
+    rows = db.execute(
+        """
+        SELECT
+            recurring_events.id,
+            recurring_events.user_id,
+            recurring_events.category_id,
+            recurring_events.amount,
+            recurring_events.description,
+            recurring_events.account_id,
+            date(recurring_events.start_date) AS start_date,
+            date(recurring_events.end_date) AS end_date,
+            date(recurring_events.next_date) AS next_date,
+            recurring_events.interval_days,
+            recurring_events.day_of_month,
+            categories.type AS category_type,
+            categories.name AS category_name,
+            accounts.name AS account_name
+        FROM recurring_events
+        JOIN categories
+          ON categories.id = recurring_events.category_id
+         AND categories.user_id = recurring_events.user_id
+        JOIN accounts
+          ON accounts.id = recurring_events.account_id
+         AND accounts.user_id = recurring_events.user_id
+        WHERE recurring_events.id = ?
+          AND recurring_events.user_id = ?
+        LIMIT 1
+        """,
+        recurring_event_id,
+        user_id
+    )
+
+    if not rows:
+        raise ValidationError("Recurring event not found.")
+
+    return rows[0]
+
+
+def describe_recurrent_schedule(interval_days, day_of_month):
+    """Return a short user-facing schedule description."""
+    if day_of_month is not None:
+        return f"Monthly on day {day_of_month}"
+
+    interval_days = int(interval_days)
+
+    if interval_days == 7:
+        return "Weekly"
+    if interval_days == 14:
+        return "Every 2 weeks"
+    if interval_days == 365:
+        return "Yearly"
+
+    return f"Every {interval_days} days"
+
+
+def recurrent_frequency(interval_days, day_of_month):
+    """Return the form frequency value for a stored schedule."""
+    if day_of_month is not None:
+        return "monthly"
+
+    interval_days = int(interval_days)
+
+    if interval_days == 7:
+        return "weekly"
+    if interval_days == 14:
+        return "biweekly"
+    if interval_days == 365:
+        return "yearly"
+
+    return "custom"
+
+
+def load_recurrent_events(db, user_id):
+    """Load and format the user's recurring schedules for Settings."""
+    events = db.execute(
+        """
+        SELECT
+            recurring_events.id,
+            recurring_events.category_id,
+            recurring_events.amount,
+            recurring_events.description,
+            recurring_events.account_id,
+            date(recurring_events.start_date) AS start_date,
+            date(recurring_events.end_date) AS end_date,
+            date(recurring_events.next_date) AS next_date,
+            recurring_events.interval_days,
+            recurring_events.day_of_month,
+            categories.name AS category_name,
+            categories.type AS category_type,
+            accounts.name AS account_name,
+            accounts.active AS account_active
+        FROM recurring_events
+        JOIN categories
+          ON categories.id = recurring_events.category_id
+         AND categories.user_id = recurring_events.user_id
+        JOIN accounts
+          ON accounts.id = recurring_events.account_id
+         AND accounts.user_id = recurring_events.user_id
+        WHERE recurring_events.user_id = ?
+        ORDER BY
+            categories.type,
+            recurring_events.next_date,
+            recurring_events.id
+        """,
+        user_id
+    )
+
+    for event in events:
+        event["schedule_label"] = describe_recurrent_schedule(
+            event["interval_days"],
+            event["day_of_month"]
+        )
+        event["frequency"] = recurrent_frequency(
+            event["interval_days"],
+            event["day_of_month"]
+        )
+        next_date = date.fromisoformat(event["next_date"])
+        event["next_date_label"] = (
+            f"{next_date.strftime('%b')} {next_date.day}, "
+            f"{next_date.year}"
+        )
+
+    return events
+
+
+def previous_recurrent_date(next_date, interval_days, day_of_month):
+    """Find the scheduled occurrence immediately before next_date."""
+    if interval_days is not None:
+        return next_date - timedelta(days=int(interval_days))
+
+    previous_month = next_date.month - 1
+    previous_year = next_date.year
+
+    if previous_month == 0:
+        previous_month = 12
+        previous_year -= 1
+
+    previous_day = min(
+        int(day_of_month),
+        monthrange(previous_year, previous_month)[1]
+    )
+
+    return date(previous_year, previous_month, previous_day)
+
+
+def calculate_edited_next_date(
+    event,
+    new_start_date,
+    new_interval_days,
+    new_day_of_month
+):
+    """Calculate an edited schedule from its most recent occurrence."""
+    today = date.today()
+    old_start_date = date.fromisoformat(event["start_date"])
+    old_next_date = date.fromisoformat(event["next_date"])
+    never_started = (
+        old_next_date == old_start_date
+        and old_start_date > today
+    )
+
+    if never_started or new_start_date > today:
+        return new_start_date
+
+    most_recent_date = previous_recurrent_date(
+        old_next_date,
+        event["interval_days"],
+        event["day_of_month"]
+    )
+    new_next_date = advance_recurrent_date(
+        most_recent_date,
+        new_interval_days,
+        new_day_of_month
+    )
+
+    while new_next_date < new_start_date:
+        new_next_date = advance_recurrent_date(
+            new_next_date,
+            new_interval_days,
+            new_day_of_month
+        )
+
+    return new_next_date
+
+
+def update_recurrent_event(
+    db,
+    user_id,
+    recurring_event_id,
+    submitted_form
+):
+    """Process due entries, then validate and update one schedule."""
+    process_recurrent_events(db, user_id)
+    event = get_owned_recurrent_event(
+        db,
+        user_id,
+        recurring_event_id
+    )
+    amount = validate_transaction_amount(submitted_form.get("amount"))
+    description = validate_transaction_description(
+        submitted_form.get("description")
+    )
+    account_id = validate_transaction_account(
+        db,
+        user_id,
+        submitted_form.get("account_id")
+    )
+    category_id = parse_record_id(
+        submitted_form.get("category_id"),
+        "category"
+    )
+    categories = db.execute(
+        """
+        SELECT id, type
+        FROM categories
+        WHERE id = ?
+          AND user_id = ?
+        LIMIT 1
+        """,
+        category_id,
+        user_id
+    )
+
+    if not categories:
+        raise ValidationError("Category not found.")
+
+    if categories[0]["type"] != event["category_type"]:
+        raise ValidationError(
+            "Choose a category of the same transaction type."
+        )
+
+    start_date = date.fromisoformat(
+        validate_transaction_date(submitted_form.get("start_date"))
+    )
+    end_date_text = (submitted_form.get("end_date") or "").strip()
+    end_date = None
+
+    if end_date_text:
+        end_date = date.fromisoformat(
+            validate_transaction_date(end_date_text)
+        )
+
+        if end_date < start_date:
+            raise ValidationError(
+                "The end date cannot be before the start date."
+            )
+
+    interval_days, day_of_month = validate_recurrent_schedule(
+        submitted_form,
+        start_date
+    )
+    next_date = calculate_edited_next_date(
+        event,
+        start_date,
+        interval_days,
+        day_of_month
+    )
+
+    db.execute(
+        """
+        UPDATE recurring_events
+        SET category_id = ?,
+            amount = ?,
+            description = ?,
+            account_id = ?,
+            start_date = ?,
+            end_date = ?,
+            next_date = ?,
+            interval_days = ?,
+            day_of_month = ?,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+          AND user_id = ?
+        """,
+        category_id,
+        float(amount),
+        description,
+        account_id,
+        start_date.isoformat(),
+        end_date.isoformat() if end_date else None,
+        next_date.isoformat(),
+        interval_days,
+        day_of_month,
+        event["id"],
+        user_id
+    )
+
+    return event["category_type"]
+
+
+def delete_recurrent_event(db, user_id, recurring_event_id):
+    """Process due entries, then delete only the recurring schedule."""
+    process_recurrent_events(db, user_id)
+    event = get_owned_recurrent_event(
+        db,
+        user_id,
+        recurring_event_id
+    )
+    db.execute(
+        """
+        DELETE FROM recurring_events
+        WHERE id = ?
+          AND user_id = ?
+        """,
+        event["id"],
+        user_id
+    )
+
+    return event["category_type"]
+
+
 def update_transaction(
     db,
     transaction_table,
@@ -1282,6 +1682,12 @@ def transaction_page(db, transaction_table, limit):
         action = (
             request.form.get("action") or "add_transaction"
         ).strip()
+        return_to = (request.form.get("return_to") or "").strip()
+        success_url = (
+            url_for("index")
+            if action == "add_transaction" and return_to == "dashboard"
+            else transaction_page_url
+        )
 
         if action == "delete_transaction":
             try:
@@ -1362,7 +1768,7 @@ def transaction_page(db, transaction_table, limit):
                 )
                 flash(f"{label} updated.", "success")
 
-            return redirect(transaction_page_url)
+            return redirect(success_url)
 
     search = (request.args.get("q") or "").strip()
     start_date = (request.args.get("start") or "").strip()

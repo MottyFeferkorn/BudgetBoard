@@ -1,14 +1,319 @@
 {% extends "layout.html" %}
 
+{% macro category_list(categories, category_type, edit_category_id, adding_category_type) %}
+    <div class="settings-category-list">
+        {% for category in categories %}
+            {% if edit_category_id == category["id"] %}
+                <form class="settings-category-row settings-category-row-editing" action="{{ url_for('settings') }}" method="post">
+                    <input name="category_id" type="hidden" value="{{ category['id'] }}">
+                    <input name="category_type" type="hidden" value="{{ category_type }}">
+
+                    <div class="settings-category-edit-field">
+                        <label class="visually-hidden" for="category-name-{{ category['id'] }}">Category name</label>
+                        <input
+                            class="form-control settings-category-input w-100"
+                            id="category-name-{{ category['id'] }}"
+                            name="category_name"
+                            type="text"
+                            value="{{ category['name'] }}"
+                            maxlength="50"
+                            required
+                            autofocus
+                        >
+                    </div>
+
+                    <div class="settings-category-edit-actions">
+                        <a
+                            class="btn btn-light settings-row-button"
+                            href="{{ url_for('settings', section='categories', category_type=category_type) }}"
+                        >
+                            Cancel
+                        </a>
+                        <button class="btn btn-primary settings-row-button" name="action" type="submit" value="rename_category">Save</button>
+                    </div>
+
+                    <button
+                        class="btn settings-category-delete-button"
+                        name="action"
+                        type="submit"
+                        value="delete_category"
+                        formnovalidate
+                        aria-label="Delete {{ category['name'] }} category"
+                    >
+                        <i class="bi bi-trash3" aria-hidden="true"></i>
+                    </button>
+                </form>
+            {% else %}
+                <div class="settings-category-row">
+                    <span class="settings-category-name">{{ category["name"] }}</span>
+                    <a
+                        class="btn settings-category-edit-button"
+                        href="{{ url_for('settings', section='categories', category_type=category_type, edit_category=category['id']) }}"
+                        aria-label="Edit {{ category['name'] }} category"
+                    >
+                        <i class="bi bi-pencil" aria-hidden="true"></i>
+                    </a>
+                </div>
+            {% endif %}
+        {% else %}
+            <div class="settings-empty-state">
+                <i class="bi bi-tags" aria-hidden="true"></i>
+                <p class="fw-semibold mb-1">No {{ category_type }} categories</p>
+                <p class="small text-secondary mb-0">Add a category to start organizing your transactions.</p>
+            </div>
+        {% endfor %}
+
+        <div class="settings-category-footer">
+            {% if adding_category_type == category_type %}
+                <form class="settings-add-category-form" action="{{ url_for('settings') }}" method="post">
+                    <input name="category_type" type="hidden" value="{{ category_type }}">
+                    <label class="visually-hidden" for="new-{{ category_type }}-category">New category name</label>
+                    <input
+                        class="form-control settings-category-input"
+                        id="new-{{ category_type }}-category"
+                        name="category_name"
+                        type="text"
+                        maxlength="50"
+                        placeholder="Category name"
+                        required
+                        autofocus
+                    >
+                    <a
+                        class="btn btn-light settings-row-button"
+                        href="{{ url_for('settings', section='categories', category_type=category_type) }}"
+                    >
+                        Cancel
+                    </a>
+                    <button class="btn btn-primary settings-row-button" name="action" type="submit" value="add_category">Save</button>
+                </form>
+            {% else %}
+                <a
+                    class="btn btn-outline-primary settings-add-category"
+                    href="{{ url_for('settings', section='categories', category_type=category_type, add_category=category_type) }}"
+                >
+                    <i class="bi bi-plus-lg me-2" aria-hidden="true"></i>Add Category
+                </a>
+            {% endif %}
+        </div>
+    </div>
+{% endmacro %}
+
+
+{% macro recurring_list(events, recurring_type, categories, accounts, edit_recurrent_id) %}
+    <div class="settings-recurring-list">
+        {% for event in events %}
+            {% if edit_recurrent_id == event["id"] %}
+                <form class="settings-recurring-row settings-recurring-row-editing" action="{{ url_for('settings') }}" method="post">
+                    <input name="recurring_event_id" type="hidden" value="{{ event['id'] }}">
+                    <input name="recurring_type" type="hidden" value="{{ recurring_type }}">
+
+                    <div class="settings-recurring-edit-fields">
+                        <div class="d-flex flex-column flex-sm-row align-items-sm-center justify-content-between gap-1 mb-3">
+                            <div class="d-flex align-items-center gap-2">
+                                <h3 class="h6 fw-bold mb-0">{{ event["category_name"] }}</h3>
+                                <span class="badge rounded-pill text-bg-light border text-secondary">Editing</span>
+                            </div>
+                            <span class="small text-secondary">{{ event["amount"] | usd }} · {{ event["account_name"] }}</span>
+                        </div>
+
+                        <div class="row g-3">
+                            <div class="col-12 col-sm-6 col-xl-4">
+                                <label class="form-label small fw-semibold" for="recurring-amount-{{ event['id'] }}">Amount</label>
+                                <div class="input-group settings-input-group">
+                                    <span class="input-group-text">$</span>
+                                    <input
+                                        class="form-control"
+                                        id="recurring-amount-{{ event['id'] }}"
+                                        name="amount"
+                                        type="number"
+                                        min="0.01"
+                                        step="0.01"
+                                        value="{{ '%.2f' | format(event['amount']) }}"
+                                        required
+                                    >
+                                </div>
+                            </div>
+
+                            <div class="col-12 col-sm-6 col-xl-4">
+                                <label class="form-label small fw-semibold" for="recurring-category-{{ event['id'] }}">Category</label>
+                                <select class="form-select settings-form-control" id="recurring-category-{{ event['id'] }}" name="category_id" required>
+                                    {% for category in categories %}
+                                        <option value="{{ category['id'] }}" {% if category["id"] == event["category_id"] %}selected{% endif %}>
+                                            {{ category["name"] }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="col-12 col-xl-4">
+                                <label class="form-label small fw-semibold" for="recurring-description-{{ event['id'] }}">
+                                    Description <span class="text-secondary fw-normal">(optional)</span>
+                                </label>
+                                <input
+                                    class="form-control settings-form-control"
+                                    id="recurring-description-{{ event['id'] }}"
+                                    name="description"
+                                    type="text"
+                                    maxlength="150"
+                                    value="{{ event['description'] or '' }}"
+                                >
+                            </div>
+
+                            <div class="col-12 col-sm-6 col-xl-4">
+                                <label class="form-label small fw-semibold" for="recurring-account-{{ event['id'] }}">Account</label>
+                                <select class="form-select settings-form-control" id="recurring-account-{{ event['id'] }}" name="account_id" required>
+                                    {% for account in accounts %}
+                                        <option
+                                            value="{{ account['id'] }}"
+                                            {% if account["id"] == event["account_id"] %}selected{% endif %}
+                                            {% if not account["active"] and account["id"] != event["account_id"] %}disabled{% endif %}
+                                        >
+                                            {{ account["name"] }}{% if not account["active"] %} (inactive){% endif %}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="col-12 col-sm-6 col-xl-4">
+                                <label class="form-label small fw-semibold" for="recurring-start-date-{{ event['id'] }}">Start date</label>
+                                <input
+                                    class="form-control settings-form-control"
+                                    id="recurring-start-date-{{ event['id'] }}"
+                                    name="start_date"
+                                    type="date"
+                                    value="{{ event['start_date'] }}"
+                                    required
+                                >
+                            </div>
+
+                            <div class="col-12 col-sm-6 col-xl-4">
+                                <label class="form-label small fw-semibold" for="recurring-end-date-{{ event['id'] }}">
+                                    End date <span class="text-secondary fw-normal">(optional)</span>
+                                </label>
+                                <input
+                                    class="form-control settings-form-control"
+                                    id="recurring-end-date-{{ event['id'] }}"
+                                    name="end_date"
+                                    type="date"
+                                    value="{{ event['end_date'] or '' }}"
+                                >
+                            </div>
+
+                            <div class="col-12 col-sm-6 col-xl-4">
+                                <label class="form-label small fw-semibold" for="recurring-frequency-{{ event['id'] }}">Frequency</label>
+                                <select class="form-select settings-form-control" id="recurring-frequency-{{ event['id'] }}" name="frequency" required>
+                                    <option value="weekly" {% if event["frequency"] == "weekly" %}selected{% endif %}>Weekly</option>
+                                    <option value="biweekly" {% if event["frequency"] == "biweekly" %}selected{% endif %}>Every 2 weeks</option>
+                                    <option value="monthly" {% if event["frequency"] == "monthly" %}selected{% endif %}>Monthly</option>
+                                    <option value="yearly" {% if event["frequency"] == "yearly" %}selected{% endif %}>Yearly</option>
+                                    <option value="custom" {% if event["frequency"] == "custom" %}selected{% endif %}>Custom interval</option>
+                                </select>
+                                <div class="form-text">Monthly schedules use the day from the start date.</div>
+                            </div>
+
+                            <div class="col-12 col-sm-6 col-xl-4">
+                                <label class="form-label small fw-semibold" for="recurring-interval-{{ event['id'] }}">Custom interval</label>
+                                <div class="input-group settings-input-group">
+                                    <input
+                                        class="form-control"
+                                        id="recurring-interval-{{ event['id'] }}"
+                                        name="interval_days"
+                                        type="number"
+                                        min="1"
+                                        max="365"
+                                        value="{% if event['frequency'] == 'custom' %}{{ event['interval_days'] }}{% else %}10{% endif %}"
+                                        aria-label="Number of days between occurrences"
+                                    >
+                                    <span class="input-group-text">days</span>
+                                </div>
+                            </div>
+
+                            <div class="col-12 col-sm-6 col-xl-4">
+                                <span class="form-label small fw-semibold d-block">Next occurrence</span>
+                                <div class="settings-next-date">
+                                    <i class="bi bi-calendar-event text-primary" aria-hidden="true"></i>
+                                    <span>{{ event["next_date_label"] }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="settings-recurring-edit-actions">
+                        <a
+                            class="btn btn-light settings-row-button"
+                            href="{{ url_for('settings', section='recurring', recurring_type=recurring_type) }}"
+                        >
+                            Cancel
+                        </a>
+                        <button class="btn btn-primary settings-row-button" name="action" type="submit" value="update_recurrent">Save</button>
+                    </div>
+
+                    <button
+                        class="btn settings-recurring-delete-button"
+                        name="action"
+                        type="submit"
+                        value="delete_recurrent"
+                        formnovalidate
+                        aria-label="Delete {{ event['category_name'] }} recurring event"
+                    >
+                        <i class="bi bi-trash3" aria-hidden="true"></i>
+                    </button>
+                </form>
+            {% else %}
+                <div class="settings-recurring-row">
+                    <div class="settings-recurring-identity">
+                        <div class="settings-recurring-icon settings-recurring-icon-{{ recurring_type }}" aria-hidden="true">
+                            <i class="bi {% if recurring_type == 'income' %}bi-arrow-down{% else %}bi-arrow-up{% endif %}"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <h3 class="h6 fw-bold mb-1">{{ event["category_name"] }}</h3>
+                            <p class="small text-secondary text-truncate mb-0">{{ event["description"] or "No description" }}</p>
+                        </div>
+                    </div>
+
+                    <div class="settings-recurring-detail">
+                        <span class="settings-recurring-label">Amount &amp; account</span>
+                        <span>
+                            <strong class="{% if recurring_type == 'income' %}text-success{% else %}text-danger{% endif %}">{{ event["amount"] | usd }}</strong>
+                            · {{ event["account_name"] }}
+                        </span>
+                    </div>
+
+                    <div class="settings-recurring-detail">
+                        <span class="settings-recurring-label">Schedule</span>
+                        <span>{{ event["schedule_label"] }}</span>
+                    </div>
+
+                    <div class="settings-recurring-detail">
+                        <span class="settings-recurring-label">Next occurrence</span>
+                        <span>{{ event["next_date_label"] }}</span>
+                    </div>
+
+                    <a
+                        class="btn settings-category-edit-button"
+                        href="{{ url_for('settings', section='recurring', recurring_type=recurring_type, edit_recurrent=event['id']) }}"
+                        aria-label="Edit {{ event['category_name'] }} recurring event"
+                    >
+                        <i class="bi bi-pencil" aria-hidden="true"></i>
+                    </a>
+                </div>
+            {% endif %}
+        {% else %}
+            <div class="settings-empty-state">
+                <i class="bi bi-arrow-repeat" aria-hidden="true"></i>
+                <p class="fw-semibold mb-1">No recurring {{ recurring_type }}</p>
+                <p class="small text-secondary mb-0">Recurring events created from the {{ recurring_type }} page will appear here.</p>
+            </div>
+        {% endfor %}
+    </div>
+{% endmacro %}
+
+
 {% block title %}
     Settings
 {% endblock %}
-
 {% block styles %}
-    <link
-        rel="stylesheet"
-        href="{{ url_for('static', filename='settings.css') }}"
-    >
+    <link rel="stylesheet" href="{{ url_for('static', filename='settings.css') }}">
 {% endblock %}
 
 {% block main %}
@@ -20,9 +325,9 @@
             </header>
 
             <div class="row g-4 align-items-start settings-layout">
-                <input class="btn-check" type="radio" name="settings-section" id="settings-account-section" checked>
-                <input class="btn-check" type="radio" name="settings-section" id="settings-categories-section">
-                <input class="btn-check" type="radio" name="settings-section" id="settings-recurring-section">
+                <input class="btn-check" type="radio" name="settings-section" id="settings-account-section" {% if active_section == "account" %}checked{% endif %}>
+                <input class="btn-check" type="radio" name="settings-section" id="settings-categories-section" {% if active_section == "categories" %}checked{% endif %}>
+                <input class="btn-check" type="radio" name="settings-section" id="settings-recurring-section" {% if active_section == "recurring" %}checked{% endif %}>
 
                 <aside class="col-12 col-lg-3 settings-sidebar" aria-label="Settings navigation">
                     <div class="card settings-nav-card border-0">
@@ -59,35 +364,48 @@
                                         <h3 class="h6 fw-bold mb-1" id="account-information-heading">Account information</h3>
                                         <p class="small text-secondary mb-0">Your personal account details.</p>
                                     </div>
-                                    <button class="btn settings-icon-button" type="button" aria-label="Edit account information">
-                                        <i class="bi bi-pencil" aria-hidden="true"></i>
-                                    </button>
+                                    {% if not edit_account %}
+                                        <a
+                                            class="btn settings-icon-button"
+                                            href="{{ url_for('settings', section='account', edit='account') }}"
+                                            aria-label="Edit account information"
+                                        >
+                                            <i class="bi bi-pencil" aria-hidden="true"></i>
+                                        </a>
+                                    {% endif %}
                                 </div>
 
-                                <div class="account-information-view">
+                                {% if edit_account %}
+                                    <form action="{{ url_for('settings') }}" method="post">
+                                        <div class="mb-3">
+                                            <label class="form-label fw-semibold" for="settings-email">Email address</label>
+                                            <input
+                                                class="form-control settings-form-control"
+                                                id="settings-email"
+                                                name="email"
+                                                type="email"
+                                                value="{{ user['username'] }}"
+                                                required
+                                                autofocus
+                                            >
+                                        </div>
+                                        <div class="d-flex flex-wrap justify-content-end gap-2">
+                                            <a class="btn btn-light settings-button" href="{{ url_for('settings', section='account') }}">Cancel</a>
+                                            <button class="btn btn-primary settings-button" name="action" type="submit" value="update_email">Save Changes</button>
+                                        </div>
+                                    </form>
+                                {% else %}
                                     <dl class="row g-0 mb-0 account-details">
                                         <div class="col-12 col-md-6 account-detail">
                                             <dt>Email address</dt>
-                                            <dd>user@example.com</dd>
+                                            <dd>{{ user["username"] }}</dd>
                                         </div>
                                         <div class="col-12 col-md-6 account-detail">
                                             <dt>Member since</dt>
-                                            <dd>August 2026</dd>
+                                            <dd>{{ member_since }}</dd>
                                         </div>
                                     </dl>
-                                </div>
-
-                                <!-- Static structure for the future account editing state. -->
-                                <div class="account-information-edit d-none">
-                                    <div class="mb-3">
-                                        <label class="form-label fw-semibold" for="settings-email">Email address</label>
-                                        <input class="form-control settings-form-control" id="settings-email" type="email" value="user@example.com">
-                                    </div>
-                                    <div class="d-flex flex-wrap justify-content-end gap-2">
-                                        <button class="btn btn-light settings-button" type="button">Cancel</button>
-                                        <button class="btn btn-primary settings-button" type="button">Save Changes</button>
-                                    </div>
-                                </div>
+                                {% endif %}
                             </section>
 
                             <hr class="settings-divider">
@@ -98,22 +416,24 @@
                                     <p class="small text-secondary mb-0">Use a strong password you do not use elsewhere.</p>
                                 </div>
 
-                                <div class="row g-3">
-                                    <div class="col-12">
-                                        <label class="form-label fw-semibold" for="current-password">Current password</label>
-                                        <input class="form-control settings-form-control" id="current-password" type="password" autocomplete="current-password">
+                                <form action="{{ url_for('settings') }}" method="post">
+                                    <div class="row g-3">
+                                        <div class="col-12">
+                                            <label class="form-label fw-semibold" for="current-password">Current password</label>
+                                            <input class="form-control settings-form-control" id="current-password" name="current_password" type="password" autocomplete="current-password" required>
+                                        </div>
+                                        <div class="col-12 col-md-6">
+                                            <label class="form-label fw-semibold" for="new-password">New password</label>
+                                            <input class="form-control settings-form-control" id="new-password" name="new_password" type="password" minlength="8" autocomplete="new-password" required>
+                                        </div>
+                                        <div class="col-12 col-md-6">
+                                            <label class="form-label fw-semibold" for="confirm-password">Confirm new password</label>
+                                            <input class="form-control settings-form-control" id="confirm-password" name="confirmation" type="password" minlength="8" autocomplete="new-password" required>
+                                        </div>
                                     </div>
-                                    <div class="col-12 col-md-6">
-                                        <label class="form-label fw-semibold" for="new-password">New password</label>
-                                        <input class="form-control settings-form-control" id="new-password" type="password" autocomplete="new-password">
-                                    </div>
-                                    <div class="col-12 col-md-6">
-                                        <label class="form-label fw-semibold" for="confirm-password">Confirm new password</label>
-                                        <input class="form-control settings-form-control" id="confirm-password" type="password" autocomplete="new-password">
-                                    </div>
-                                </div>
 
-                                <button class="btn btn-primary settings-button mt-4" type="button">Change Password</button>
+                                    <button class="btn btn-primary settings-button mt-4" name="action" type="submit" value="change_password">Change Password</button>
+                                </form>
                             </section>
                         </div>
                     </article>
@@ -126,91 +446,20 @@
                             </header>
 
                             <div class="settings-category-switcher">
-                                <input class="btn-check" type="radio" name="category-type" id="income-categories" checked>
-                                <input class="btn-check" type="radio" name="category-type" id="expense-categories">
+                                <input class="btn-check" type="radio" name="category-type" id="income-categories" {% if active_category_type == "income" %}checked{% endif %}>
+                                <input class="btn-check" type="radio" name="category-type" id="expense-categories" {% if active_category_type == "expense" %}checked{% endif %}>
 
                                 <div class="btn-group settings-category-tabs mb-4" role="tablist" aria-label="Category type">
-                                    <label class="btn" for="income-categories" role="tab">
-                                        Income
-                                    </label>
-                                    <label class="btn" for="expense-categories" role="tab">
-                                        Expenses
-                                    </label>
+                                    <label class="btn" for="income-categories" role="tab">Income</label>
+                                    <label class="btn" for="expense-categories" role="tab">Expenses</label>
                                 </div>
 
                                 <div class="settings-category-panels">
                                     <section class="settings-category-pane income-category-pane" aria-label="Income categories">
-                                        <div class="settings-category-list">
-                                            <div class="settings-category-row">
-                                                <span class="settings-category-name">Salary</span>
-                                                <button class="btn settings-category-edit-button" type="button" aria-label="Edit Salary category">
-                                                    <i class="bi bi-pencil" aria-hidden="true"></i>
-                                                </button>
-                                            </div>
-
-                                            <!-- Static preview of a category row in edit mode. -->
-                                            <div class="settings-category-row settings-category-row-editing">
-                                                <button class="btn settings-category-delete-button" type="button" aria-label="Delete Freelance category">
-                                                    <i class="bi bi-trash3" aria-hidden="true"></i>
-                                                </button>
-                                                <div>
-                                                    <label class="visually-hidden" for="edit-freelance-category">Category name</label>
-                                                    <input class="form-control settings-category-input w-100" id="edit-freelance-category" type="text" value="Freelance">
-                                                </div>
-                                                <div class="settings-category-edit-actions">
-                                                    <button class="btn btn-light settings-row-button" type="button">Cancel</button>
-                                                    <button class="btn btn-primary settings-row-button" type="button">Save</button>
-                                                </div>
-                                            </div>
-
-                                            <div class="settings-category-row">
-                                                <span class="settings-category-name">Interest</span>
-                                                <button class="btn settings-category-edit-button" type="button" aria-label="Edit Interest category">
-                                                    <i class="bi bi-pencil" aria-hidden="true"></i>
-                                                </button>
-                                            </div>
-                                            <div class="settings-category-row">
-                                                <span class="settings-category-name">Other</span>
-                                                <button class="btn settings-category-edit-button" type="button" aria-label="Edit Other income category">
-                                                    <i class="bi bi-pencil" aria-hidden="true"></i>
-                                                </button>
-                                            </div>
-                                            <div class="settings-category-footer">
-                                                <button class="btn btn-outline-primary settings-add-category" type="button">
-                                                    <i class="bi bi-plus-lg me-2" aria-hidden="true"></i>Add Category
-                                                </button>
-                                            </div>
-                                        </div>
+                                        {{ category_list(income_categories, "income", edit_category_id, adding_category_type) }}
                                     </section>
-
                                     <section class="settings-category-pane expense-category-pane" aria-label="Expense categories">
-                                        <div class="settings-category-list">
-                                            <div class="settings-category-row">
-                                                <span class="settings-category-name">Rent</span>
-                                                <button class="btn settings-category-edit-button" type="button" aria-label="Edit Rent category"><i class="bi bi-pencil" aria-hidden="true"></i></button>
-                                            </div>
-                                            <div class="settings-category-row">
-                                                <span class="settings-category-name">Groceries</span>
-                                                <button class="btn settings-category-edit-button" type="button" aria-label="Edit Groceries category"><i class="bi bi-pencil" aria-hidden="true"></i></button>
-                                            </div>
-                                            <div class="settings-category-row">
-                                                <span class="settings-category-name">Transportation</span>
-                                                <button class="btn settings-category-edit-button" type="button" aria-label="Edit Transportation category"><i class="bi bi-pencil" aria-hidden="true"></i></button>
-                                            </div>
-                                            <div class="settings-category-row">
-                                                <span class="settings-category-name">Utilities</span>
-                                                <button class="btn settings-category-edit-button" type="button" aria-label="Edit Utilities category"><i class="bi bi-pencil" aria-hidden="true"></i></button>
-                                            </div>
-                                            <div class="settings-category-row">
-                                                <span class="settings-category-name">Entertainment</span>
-                                                <button class="btn settings-category-edit-button" type="button" aria-label="Edit Entertainment category"><i class="bi bi-pencil" aria-hidden="true"></i></button>
-                                            </div>
-                                            <div class="settings-category-footer">
-                                                <button class="btn btn-outline-primary settings-add-category" type="button">
-                                                    <i class="bi bi-plus-lg me-2" aria-hidden="true"></i>Add Category
-                                                </button>
-                                            </div>
-                                        </div>
+                                        {{ category_list(expense_categories, "expense", edit_category_id, adding_category_type) }}
                                     </section>
                                 </div>
                             </div>
@@ -225,8 +474,8 @@
                             </header>
 
                             <div class="settings-recurring-switcher">
-                                <input class="btn-check" type="radio" name="recurring-type" id="income-recurring" checked>
-                                <input class="btn-check" type="radio" name="recurring-type" id="expense-recurring">
+                                <input class="btn-check" type="radio" name="recurring-type" id="income-recurring" {% if active_recurring_type == "income" %}checked{% endif %}>
+                                <input class="btn-check" type="radio" name="recurring-type" id="expense-recurring" {% if active_recurring_type == "expense" %}checked{% endif %}>
 
                                 <div class="btn-group settings-recurring-tabs mb-4" role="tablist" aria-label="Recurring event type">
                                     <label class="btn" for="income-recurring" role="tab">Income</label>
@@ -235,199 +484,10 @@
 
                                 <div class="settings-recurring-panels">
                                     <section class="settings-recurring-pane income-recurring-pane" aria-label="Recurring income events">
-                                        <div class="settings-recurring-list">
-                                            <div class="settings-recurring-row">
-                                                <div class="settings-recurring-identity">
-                                                    <div class="settings-recurring-icon settings-recurring-icon-income" aria-hidden="true">
-                                                        <i class="bi bi-briefcase"></i>
-                                                    </div>
-                                                    <div class="min-w-0">
-                                                        <h3 class="h6 fw-bold mb-1">Salary</h3>
-                                                        <p class="small text-secondary mb-0">Income deposit</p>
-                                                    </div>
-                                                </div>
-                                                <div class="settings-recurring-detail">
-                                                    <span class="settings-recurring-label">Amount &amp; account</span>
-                                                    <span><strong class="text-success">$2,500.00</strong> · Main Checking</span>
-                                                </div>
-                                                <div class="settings-recurring-detail">
-                                                    <span class="settings-recurring-label">Schedule</span>
-                                                    <span>Every 14 days</span>
-                                                </div>
-                                                <div class="settings-recurring-detail">
-                                                    <span class="settings-recurring-label">Next occurrence</span>
-                                                    <span>Sep 5, 2026</span>
-                                                </div>
-                                                <button class="btn settings-category-edit-button" type="button" aria-label="Edit Salary recurring event">
-                                                    <i class="bi bi-pencil" aria-hidden="true"></i>
-                                                </button>
-                                            </div>
-
-                                            <div class="settings-recurring-row">
-                                                <div class="settings-recurring-identity">
-                                                    <div class="settings-recurring-icon settings-recurring-icon-income" aria-hidden="true">
-                                                        <i class="bi bi-laptop"></i>
-                                                    </div>
-                                                    <div class="min-w-0">
-                                                        <h3 class="h6 fw-bold mb-1">Freelance Retainer</h3>
-                                                        <p class="small text-secondary mb-0">Monthly client retainer</p>
-                                                    </div>
-                                                </div>
-                                                <div class="settings-recurring-detail">
-                                                    <span class="settings-recurring-label">Amount &amp; account</span>
-                                                    <span><strong class="text-success">$850.00</strong> · Main Checking</span>
-                                                </div>
-                                                <div class="settings-recurring-detail">
-                                                    <span class="settings-recurring-label">Schedule</span>
-                                                    <span>Monthly on day 1</span>
-                                                </div>
-                                                <div class="settings-recurring-detail">
-                                                    <span class="settings-recurring-label">Next occurrence</span>
-                                                    <span>Sep 1, 2026</span>
-                                                </div>
-                                                <button class="btn settings-category-edit-button" type="button" aria-label="Edit Freelance Retainer recurring event">
-                                                    <i class="bi bi-pencil" aria-hidden="true"></i>
-                                                </button>
-                                            </div>
-                                        </div>
+                                        {{ recurring_list(recurrent_income, "income", income_categories, accounts, edit_recurrent_id) }}
                                     </section>
-
                                     <section class="settings-recurring-pane expense-recurring-pane" aria-label="Recurring expense events">
-                                        <div class="settings-recurring-list">
-                                            <div class="settings-recurring-row">
-                                                <div class="settings-recurring-identity">
-                                                    <div class="settings-recurring-icon settings-recurring-icon-expense" aria-hidden="true">
-                                                        <i class="bi bi-house-door"></i>
-                                                    </div>
-                                                    <div class="min-w-0">
-                                                        <h3 class="h6 fw-bold mb-1">Rent</h3>
-                                                        <p class="small text-secondary mb-0">Monthly apartment rent</p>
-                                                    </div>
-                                                </div>
-                                                <div class="settings-recurring-detail">
-                                                    <span class="settings-recurring-label">Amount &amp; account</span>
-                                                    <span><strong class="text-danger">$2,000.00</strong> · Main Checking</span>
-                                                </div>
-                                                <div class="settings-recurring-detail">
-                                                    <span class="settings-recurring-label">Schedule</span>
-                                                    <span>Monthly on day 1</span>
-                                                </div>
-                                                <div class="settings-recurring-detail">
-                                                    <span class="settings-recurring-label">Next occurrence</span>
-                                                    <span>Sep 1, 2026</span>
-                                                </div>
-                                                <button class="btn settings-category-edit-button" type="button" aria-label="Edit Rent recurring event">
-                                                    <i class="bi bi-pencil" aria-hidden="true"></i>
-                                                </button>
-                                            </div>
-
-                                            <!-- Static preview of a recurring event in edit mode. -->
-                                            <div class="settings-recurring-row settings-recurring-row-editing">
-                                                <button class="btn settings-recurring-delete-button" type="button" aria-label="Delete Insurance recurring event">
-                                                    <i class="bi bi-trash3" aria-hidden="true"></i>
-                                                </button>
-
-                                                <div class="settings-recurring-edit-fields">
-                                                    <div class="d-flex flex-column flex-sm-row align-items-sm-center justify-content-between gap-1 mb-3">
-                                                        <div class="d-flex align-items-center gap-2">
-                                                            <h3 class="h6 fw-bold mb-0">Insurance</h3>
-                                                            <span class="badge rounded-pill text-bg-light border text-secondary">Editing</span>
-                                                        </div>
-                                                        <span class="small text-secondary">$180.00 · Main Checking</span>
-                                                    </div>
-                                                    <div class="row g-3">
-                                                        <div class="col-12 col-sm-6 col-xl-4">
-                                                            <label class="form-label small fw-semibold" for="recurring-amount">Amount</label>
-                                                            <div class="input-group settings-input-group">
-                                                                <span class="input-group-text">$</span>
-                                                                <input class="form-control" id="recurring-amount" type="number" min="0" step="0.01" value="180.00">
-                                                            </div>
-                                                        </div>
-                                                        <div class="col-12 col-sm-6 col-xl-4">
-                                                            <label class="form-label small fw-semibold" for="recurring-category">Category</label>
-                                                            <select class="form-select settings-form-control" id="recurring-category">
-                                                                <option>Rent</option>
-                                                                <option selected>Insurance</option>
-                                                                <option>Subscriptions</option>
-                                                            </select>
-                                                        </div>
-                                                        <div class="col-12 col-xl-4">
-                                                            <label class="form-label small fw-semibold" for="recurring-description">Description <span class="text-secondary fw-normal">(optional)</span></label>
-                                                            <input class="form-control settings-form-control" id="recurring-description" type="text" value="Car insurance">
-                                                        </div>
-                                                        <div class="col-12 col-sm-6 col-xl-4">
-                                                            <label class="form-label small fw-semibold" for="recurring-account">Account</label>
-                                                            <select class="form-select settings-form-control" id="recurring-account">
-                                                                <option selected>Main Checking</option>
-                                                                <option>Credit Card</option>
-                                                                <option>Savings</option>
-                                                            </select>
-                                                        </div>
-                                                        <div class="col-12 col-sm-6 col-xl-4">
-                                                            <label class="form-label small fw-semibold" for="recurring-start-date">Start date</label>
-                                                            <input class="form-control settings-form-control" id="recurring-start-date" type="date" value="2026-08-15">
-                                                        </div>
-                                                        <div class="col-12 col-sm-6 col-xl-4">
-                                                            <label class="form-label small fw-semibold" for="recurring-end-date">End date <span class="text-secondary fw-normal">(optional)</span></label>
-                                                            <input class="form-control settings-form-control" id="recurring-end-date" type="date">
-                                                        </div>
-                                                        <div class="col-12 col-sm-6 col-xl-4">
-                                                            <label class="form-label small fw-semibold" for="recurring-pattern">Recurrence type</label>
-                                                            <select class="form-select settings-form-control" id="recurring-pattern">
-                                                                <option>Every X days</option>
-                                                                <option selected>Monthly</option>
-                                                            </select>
-                                                        </div>
-                                                        <div class="col-12 col-sm-6 col-xl-4">
-                                                            <label class="form-label small fw-semibold" for="recurring-month-day">Schedule</label>
-                                                            <div class="input-group settings-input-group">
-                                                                <span class="input-group-text">Monthly on day</span>
-                                                                <input class="form-control" id="recurring-month-day" type="number" min="1" max="31" value="15" aria-label="Day of month">
-                                                            </div>
-                                                        </div>
-                                                        <div class="col-12 col-sm-6 col-xl-4">
-                                                            <span class="form-label small fw-semibold d-block">Next occurrence</span>
-                                                            <div class="settings-next-date">
-                                                                <i class="bi bi-calendar-event text-primary" aria-hidden="true"></i>
-                                                                <span>Sep 15, 2026</span>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                <div class="settings-recurring-edit-actions">
-                                                    <button class="btn btn-light settings-row-button" type="button">Cancel</button>
-                                                    <button class="btn btn-primary settings-row-button" type="button">Save</button>
-                                                </div>
-                                            </div>
-
-                                            <div class="settings-recurring-row">
-                                                <div class="settings-recurring-identity">
-                                                    <div class="settings-recurring-icon settings-recurring-icon-expense" aria-hidden="true">
-                                                        <i class="bi bi-credit-card"></i>
-                                                    </div>
-                                                    <div class="min-w-0">
-                                                        <h3 class="h6 fw-bold mb-1">Subscription</h3>
-                                                        <p class="small text-secondary mb-0">Software subscription</p>
-                                                    </div>
-                                                </div>
-                                                <div class="settings-recurring-detail">
-                                                    <span class="settings-recurring-label">Amount &amp; account</span>
-                                                    <span><strong class="text-danger">$24.99</strong> · Credit Card</span>
-                                                </div>
-                                                <div class="settings-recurring-detail">
-                                                    <span class="settings-recurring-label">Schedule</span>
-                                                    <span>Every 30 days</span>
-                                                </div>
-                                                <div class="settings-recurring-detail">
-                                                    <span class="settings-recurring-label">Next occurrence</span>
-                                                    <span>Sep 12, 2026</span>
-                                                </div>
-                                                <button class="btn settings-category-edit-button" type="button" aria-label="Edit Subscription recurring event">
-                                                    <i class="bi bi-pencil" aria-hidden="true"></i>
-                                                </button>
-                                            </div>
-                                        </div>
+                                        {{ recurring_list(recurrent_expenses, "expense", expense_categories, accounts, edit_recurrent_id) }}
                                     </section>
                                 </div>
                             </div>
