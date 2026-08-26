@@ -508,3 +508,7 @@ def accounts():
         accounts_url=accounts_url,
         account_filter_url=account_filter_url
     )
+
+@app.route("/settings")
+def settings():
+    return render_template("settings.html")
