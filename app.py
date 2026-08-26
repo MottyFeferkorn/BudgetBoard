@@ -492,6 +492,96 @@ def settings():
     """Display and update the signed-in user's settings."""
     user_id = session["user_id"]
 
+    users = db.execute(
+        """
+        SELECT id, username, time_added
+        FROM users
+        WHERE id = ?
+        LIMIT 1
+        """,
+        user_id
+    )
+
+    if not users:
+        session.clear()
+        return redirect(url_for("login", _external=True))
+
+    user = users[0]
+
+    def render_settings_page(
+        active_section="account",
+        active_category_type="income",
+        active_recurring_type="income",
+        edit_account=False,
+        edit_category_id=None,
+        adding_category_type=None,
+        edit_recurrent_id=None
+    ):
+        """Render Settings with an optional inline editor left open."""
+        if active_section not in {"account", "categories", "recurring"}:
+            active_section = "account"
+
+        if active_category_type not in {"income", "expense"}:
+            active_category_type = "income"
+
+        if active_recurring_type not in {"income", "expense"}:
+            active_recurring_type = "income"
+
+        try:
+            member_since = datetime.fromisoformat(
+                user["time_added"]
+            ).strftime("%B %Y")
+        except (TypeError, ValueError):
+            member_since = ""
+
+        categories = load_user_categories(db, user_id)
+        income_categories = [
+            category
+            for category in categories
+            if category["type"] == "income"
+        ]
+        expense_categories = [
+            category
+            for category in categories
+            if category["type"] == "expense"
+        ]
+        accounts = db.execute(
+            """
+            SELECT id, name, active
+            FROM accounts
+            WHERE user_id = ?
+            ORDER BY active DESC, name COLLATE NOCASE
+            """,
+            user_id
+        )
+        recurrent_events = load_recurrent_events(db, user_id)
+
+        return render_template(
+            "settings.html",
+            user=user,
+            member_since=member_since,
+            accounts=accounts,
+            income_categories=income_categories,
+            expense_categories=expense_categories,
+            recurrent_income=[
+                event
+                for event in recurrent_events
+                if event["category_type"] == "income"
+            ],
+            recurrent_expenses=[
+                event
+                for event in recurrent_events
+                if event["category_type"] == "expense"
+            ],
+            active_section=active_section,
+            active_category_type=active_category_type,
+            active_recurring_type=active_recurring_type,
+            edit_account=edit_account,
+            edit_category_id=edit_category_id,
+            adding_category_type=adding_category_type,
+            edit_recurrent_id=edit_recurrent_id
+        )
+
     if request.method == "POST":
         action = (request.form.get("action") or "").strip()
         active_section = "account"
@@ -501,7 +591,10 @@ def settings():
         recurring_type = (
             request.form.get("recurring_type") or "income"
         ).strip()
-        redirect_arguments = {}
+        edit_account = False
+        edit_category_id = None
+        adding_category_type = None
+        edit_recurrent_id = None
 
         try:
             if action == "update_email":
@@ -633,19 +726,35 @@ def settings():
             flash(str(error), "danger")
 
             if action == "update_email":
-                redirect_arguments["edit"] = "account"
+                edit_account = True
             elif action in {"rename_category", "delete_category"}:
-                redirect_arguments["edit_category"] = (
-                    request.form.get("category_id")
-                )
+                try:
+                    edit_category_id = int(
+                        request.form.get("category_id")
+                    )
+                except (TypeError, ValueError):
+                    edit_category_id = None
             elif action == "add_category":
-                redirect_arguments["add_category"] = category_type
+                adding_category_type = category_type
             elif action in {"update_recurrent", "delete_recurrent"}:
-                redirect_arguments["edit_recurrent"] = (
-                    request.form.get("recurring_event_id")
-                )
+                try:
+                    edit_recurrent_id = int(
+                        request.form.get("recurring_event_id")
+                    )
+                except (TypeError, ValueError):
+                    edit_recurrent_id = None
 
-        redirect_arguments["section"] = active_section
+            return render_settings_page(
+                active_section=active_section,
+                active_category_type=category_type,
+                active_recurring_type=recurring_type,
+                edit_account=edit_account,
+                edit_category_id=edit_category_id,
+                adding_category_type=adding_category_type,
+                edit_recurrent_id=edit_recurrent_id
+            ), 400
+
+        redirect_arguments = {"section": active_section}
 
         if active_section == "categories":
             redirect_arguments["category_type"] = category_type
@@ -661,97 +770,10 @@ def settings():
             )
         )
 
-    users = db.execute(
-        """
-        SELECT id, username, time_added
-        FROM users
-        WHERE id = ?
-        LIMIT 1
-        """,
-        user_id
-    )
-
-    if not users:
-        session.clear()
-        return redirect(url_for("login", _external=True))
-
-    user = users[0]
-
-    try:
-        member_since = datetime.fromisoformat(
-            user["time_added"]
-        ).strftime("%B %Y")
-    except (TypeError, ValueError):
-        member_since = ""
-
-    categories = load_user_categories(db, user_id)
-    income_categories = [
-        category
-        for category in categories
-        if category["type"] == "income"
-    ]
-    expense_categories = [
-        category
-        for category in categories
-        if category["type"] == "expense"
-    ]
-    accounts = db.execute(
-        """
-        SELECT id, name, active
-        FROM accounts
-        WHERE user_id = ?
-        ORDER BY active DESC, name COLLATE NOCASE
-        """,
-        user_id
-    )
-    recurrent_events = load_recurrent_events(db, user_id)
-    recurrent_income = [
-        event
-        for event in recurrent_events
-        if event["category_type"] == "income"
-    ]
-    recurrent_expenses = [
-        event
-        for event in recurrent_events
-        if event["category_type"] == "expense"
-    ]
-    active_section = request.args.get("section", "account")
-
-    if active_section not in {"account", "categories", "recurring"}:
-        active_section = "account"
-
-    active_category_type = request.args.get(
-        "category_type",
-        "income"
-    )
-
-    if active_category_type not in {"income", "expense"}:
-        active_category_type = "income"
-
-    active_recurring_type = request.args.get(
-        "recurring_type",
-        "income"
-    )
-
-    if active_recurring_type not in {"income", "expense"}:
-        active_recurring_type = "income"
-
-    return render_template(
-        "settings.html",
-        user=user,
-        member_since=member_since,
-        accounts=accounts,
-        income_categories=income_categories,
-        expense_categories=expense_categories,
-        recurrent_income=recurrent_income,
-        recurrent_expenses=recurrent_expenses,
-        active_section=active_section,
-        active_category_type=active_category_type,
-        active_recurring_type=active_recurring_type,
-        edit_account=request.args.get("edit") == "account",
-        edit_category_id=request.args.get("edit_category", type=int),
-        adding_category_type=request.args.get("add_category"),
-        edit_recurrent_id=request.args.get("edit_recurrent", type=int)
+    return render_settings_page(
+        active_section=request.args.get("section", "account"),
+        active_category_type=request.args.get("category_type", "income"),
+        active_recurring_type=request.args.get("recurring_type", "income")
     )
 
 

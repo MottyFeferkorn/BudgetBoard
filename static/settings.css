@@ -258,7 +258,7 @@
 .settings-category-row-editing {
     display: grid;
     grid-template-columns: auto minmax(8rem, 1fr) auto;
-    grid-template-areas: "delete name actions";
+    grid-template-areas: "actions name delete";
     background-color: #fbfcfd;
 }
 
@@ -390,7 +390,7 @@
 
 .settings-recurring-row-editing {
     grid-template-columns: auto minmax(0, 1fr) auto;
-    grid-template-areas: "delete fields actions";
+    grid-template-areas: "actions fields delete";
     align-items: start;
     gap: 1rem;
     padding-top: 1.25rem;
@@ -533,13 +533,13 @@
     .settings-category-row-editing {
         grid-template-columns: auto minmax(0, 1fr);
         grid-template-areas:
-            "delete name"
-            ". actions";
+            "actions delete"
+            "name name";
         gap: 0.65rem;
     }
 
     .settings-category-edit-actions {
-        justify-content: flex-end;
+        justify-content: flex-start;
     }
 
     .settings-add-category-form {
@@ -573,8 +573,8 @@
     .settings-recurring-row-editing {
         grid-template-columns: auto minmax(0, 1fr);
         grid-template-areas:
-            "delete fields"
-            ". actions";
+            "actions delete"
+            "fields fields";
     }
 
     .settings-recurring-edit-fields {
@@ -582,7 +582,7 @@
     }
 
     .settings-recurring-edit-actions {
-        justify-content: flex-end;
+        justify-content: flex-start;
     }
 }
 
