@@ -1,6 +1,6 @@
 from calendar import monthrange
 from datetime import date, datetime, timedelta
-from decimal import Decimal, InvalidOperation
+from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 from functools import wraps
 from urllib.parse import urlencode
 
@@ -2472,3 +2472,649 @@ def transaction_page(db, transaction_table, limit):
         transaction_amount_class=settings["amount_class"],
         transaction_empty_message=settings["empty_message"]
     ), 400 if errors else 200
+
+
+# Reports page
+MONEY_QUANTIZER = Decimal("0.01")
+ONE_DECIMAL_QUANTIZER = Decimal("0.1")
+WHOLE_NUMBER_QUANTIZER = Decimal("1")
+ZERO_MONEY = Decimal("0.00")
+REPORT_CHART_MONTHS = 6
+TRANSACTION_TABLES = {
+    "income": "income",
+    "expense": "expenses"
+}
+
+
+def report_money(value):
+    """Convert a SQLite numeric result to a two-decimal Decimal."""
+    return Decimal(str(value or 0)).quantize(
+        MONEY_QUANTIZER,
+        rounding=ROUND_HALF_UP
+    )
+
+
+def report_whole_percent(numerator, denominator):
+    """Return a rounded whole-number percentage."""
+    if denominator == 0:
+        return 0
+
+    percentage = (
+        numerator / denominator * Decimal("100")
+    ).quantize(
+        WHOLE_NUMBER_QUANTIZER,
+        rounding=ROUND_HALF_UP
+    )
+
+    return int(percentage)
+
+
+def parse_report_month(value, today=None):
+    """Return the requested first-of-month date or the current month."""
+    if value is None or not str(value).strip():
+        return (today or date.today()).replace(day=1)
+
+    return parse_plan_month(value)
+
+
+def get_report_transaction_table(transaction_type):
+    """Return the allowlisted table for an income or expense report."""
+    transaction_table = TRANSACTION_TABLES.get(transaction_type)
+
+    if transaction_table is None:
+        raise ValidationError("Choose income or expenses for this report.")
+
+    return transaction_table
+
+
+def load_report_period_totals(db, user_id, period_start, period_end):
+    """Load income, expenses, and net cash flow for one date range."""
+    period_start_value = period_start.isoformat()
+    period_end_value = period_end.isoformat()
+    row = db.execute(
+        """
+        SELECT
+            COALESCE(
+                (
+                    SELECT SUM(amount)
+                    FROM income
+                    WHERE user_id = ?
+                      AND date >= ?
+                      AND date < ?
+                ),
+                0
+            ) AS total_income,
+            COALESCE(
+                (
+                    SELECT SUM(amount)
+                    FROM expenses
+                    WHERE user_id = ?
+                      AND date >= ?
+                      AND date < ?
+                ),
+                0
+            ) AS total_expenses
+        """,
+        user_id,
+        period_start_value,
+        period_end_value,
+        user_id,
+        period_start_value,
+        period_end_value
+    )[0]
+
+    total_income = report_money(row["total_income"])
+    total_expenses = report_money(row["total_expenses"])
+
+    return {
+        "income": total_income,
+        "expenses": total_expenses,
+        "net": total_income - total_expenses
+    }
+
+
+def build_report_trend(current_amount, previous_amount, favorable_when):
+    """Describe direction separately from whether a change is favorable."""
+    if favorable_when not in {"increase", "decrease"}:
+        raise ValueError("Choose increase or decrease as favorable.")
+
+    change = current_amount - previous_amount
+
+    if change > 0:
+        direction = "up"
+        icon = "bi-arrow-up-short"
+    elif change < 0:
+        direction = "down"
+        icon = "bi-arrow-down-short"
+    else:
+        direction = "flat"
+        icon = "bi-dash"
+
+    if change == 0:
+        tone = "neutral"
+    elif favorable_when == "increase":
+        tone = "positive" if change > 0 else "negative"
+    else:
+        tone = "positive" if change < 0 else "negative"
+
+    if previous_amount == 0:
+        percent_change = None
+    else:
+        percent_change = (
+            abs(change) / abs(previous_amount) * Decimal("100")
+        ).quantize(
+            ONE_DECIMAL_QUANTIZER,
+            rounding=ROUND_HALF_UP
+        )
+
+    return {
+        "direction": direction,
+        "icon": icon,
+        "tone": tone,
+        "amount_change": abs(change),
+        "percent_change": percent_change
+    }
+
+
+def load_report_monthly_series(
+    db,
+    user_id,
+    selected_month,
+    month_count=REPORT_CHART_MONTHS
+):
+    """Load complete chart data, including months without activity."""
+    if month_count < 1:
+        raise ValueError("The report must include at least one month.")
+
+    chart_start = shift_plan_month(selected_month, -(month_count - 1))
+    query_end_exclusive = shift_plan_month(selected_month, 1)
+    chart_start_value = chart_start.isoformat()
+    query_end_value = query_end_exclusive.isoformat()
+    rows = db.execute(
+        """
+        SELECT
+            month_key,
+            COALESCE(SUM(income_amount), 0) AS total_income,
+            COALESCE(SUM(expense_amount), 0) AS total_expenses
+        FROM (
+            SELECT
+                strftime('%Y-%m', date) AS month_key,
+                amount AS income_amount,
+                0 AS expense_amount
+            FROM income
+            WHERE user_id = ?
+              AND date >= ?
+              AND date < ?
+
+            UNION ALL
+
+            SELECT
+                strftime('%Y-%m', date) AS month_key,
+                0 AS income_amount,
+                amount AS expense_amount
+            FROM expenses
+            WHERE user_id = ?
+              AND date >= ?
+              AND date < ?
+        ) AS monthly_activity
+        GROUP BY month_key
+        ORDER BY month_key
+        """,
+        user_id,
+        chart_start_value,
+        query_end_value,
+        user_id,
+        chart_start_value,
+        query_end_value
+    )
+
+    series = []
+    series_by_month = {}
+
+    for offset in range(month_count):
+        month_date = shift_plan_month(chart_start, offset)
+        month_key = month_date.strftime("%Y-%m")
+        item = {
+            "value": month_key,
+            "label": month_date.strftime("%b"),
+            "full_label": month_date.strftime("%B %Y"),
+            "income": ZERO_MONEY,
+            "expenses": ZERO_MONEY,
+            "is_selected": month_date == selected_month
+        }
+        series.append(item)
+        series_by_month[month_key] = item
+
+    for row in rows:
+        item = series_by_month.get(row["month_key"])
+
+        if item:
+            item["income"] = report_money(row["total_income"])
+            item["expenses"] = report_money(row["total_expenses"])
+
+    maximum = max(
+        (
+            amount
+            for month in series
+            for amount in (month["income"], month["expenses"])
+        ),
+        default=ZERO_MONEY
+    )
+
+    for month in series:
+        for key in ("income", "expenses"):
+            amount = month[key]
+
+            if maximum == 0 or amount == 0:
+                height = 0
+            else:
+                height = int(
+                    (amount / maximum * Decimal("100")).quantize(
+                        WHOLE_NUMBER_QUANTIZER,
+                        rounding=ROUND_HALF_UP
+                    )
+                )
+                height = max(4, min(height, 100))
+
+            month[f"{key}_height"] = height
+
+    if chart_start.year == selected_month.year:
+        range_label = (
+            f"{chart_start.strftime('%B')}–"
+            f"{selected_month.strftime('%B %Y')}"
+        )
+    else:
+        range_label = (
+            f"{chart_start.strftime('%B %Y')}–"
+            f"{selected_month.strftime('%B %Y')}"
+        )
+
+    return {
+        "range_label": range_label,
+        "months": series
+    }
+
+
+def load_report_category_breakdown(
+    db,
+    user_id,
+    category_type,
+    period_start,
+    period_end
+):
+    """Load selected-period totals grouped by category."""
+    transaction_table = get_report_transaction_table(category_type)
+    period_start_value = period_start.isoformat()
+    period_end_value = period_end.isoformat()
+    rows = db.execute(
+        f"""
+        SELECT
+            categories.id AS category_id,
+            categories.name AS category_name,
+            COALESCE(SUM({transaction_table}.amount), 0) AS amount
+        FROM {transaction_table}
+        JOIN categories
+          ON categories.id = {transaction_table}.category_id
+         AND categories.user_id = {transaction_table}.user_id
+         AND categories.type = ?
+        WHERE {transaction_table}.user_id = ?
+          AND {transaction_table}.date >= ?
+          AND {transaction_table}.date < ?
+        GROUP BY categories.id, categories.name
+        ORDER BY amount DESC, categories.name
+        """,
+        category_type,
+        user_id,
+        period_start_value,
+        period_end_value
+    )
+
+    items = [
+        {
+            "category_id": row["category_id"],
+            "category_name": row["category_name"],
+            "amount": report_money(row["amount"])
+        }
+        for row in rows
+    ]
+    total = sum(
+        (item["amount"] for item in items),
+        start=ZERO_MONEY
+    )
+
+    for index, item in enumerate(items):
+        percentage = report_whole_percent(item["amount"], total)
+        item["percentage"] = percentage
+        item["bar_percent"] = max(0, min(percentage, 100))
+        item["color_index"] = index % 6 + 1
+
+    return {
+        "total": total,
+        "items": items
+    }
+
+
+def load_report_plan_comparison(
+    db,
+    user_id,
+    selected_month,
+    period_end,
+    comparison_type
+):
+    """Compare a saved income or expense plan with actual activity."""
+    transaction_table = get_report_transaction_table(comparison_type)
+    period_start_value = selected_month.isoformat()
+    period_end_value = period_end.isoformat()
+    plan = get_budget_plan(db, user_id, period_start_value)
+
+    if not plan:
+        return {
+            "exists": False,
+            "comparison_type": comparison_type,
+            "items": []
+        }
+
+    rows = db.execute(
+        f"""
+        WITH planned AS (
+            SELECT
+                budget_plan_items.category_id,
+                budget_plan_items.amount AS planned_amount
+            FROM budget_plan_items
+            JOIN budget_plans
+              ON budget_plans.id = budget_plan_items.plan_id
+             AND budget_plans.user_id = ?
+            JOIN categories
+              ON categories.id = budget_plan_items.category_id
+             AND categories.user_id = budget_plans.user_id
+             AND categories.type = ?
+            WHERE budget_plan_items.plan_id = ?
+        ),
+        actual AS (
+            SELECT
+                {transaction_table}.category_id,
+                SUM({transaction_table}.amount) AS actual_amount
+            FROM {transaction_table}
+            JOIN categories
+              ON categories.id = {transaction_table}.category_id
+             AND categories.user_id = {transaction_table}.user_id
+             AND categories.type = ?
+            WHERE {transaction_table}.user_id = ?
+              AND {transaction_table}.date >= ?
+              AND {transaction_table}.date < ?
+            GROUP BY {transaction_table}.category_id
+        ),
+        category_ids AS (
+            SELECT category_id FROM planned
+            UNION
+            SELECT category_id FROM actual
+        )
+        SELECT
+            categories.id AS category_id,
+            categories.name AS category_name,
+            COALESCE(planned.planned_amount, 0) AS planned_amount,
+            COALESCE(actual.actual_amount, 0) AS actual_amount
+        FROM category_ids
+        JOIN categories
+          ON categories.id = category_ids.category_id
+         AND categories.user_id = ?
+         AND categories.type = ?
+        LEFT JOIN planned
+          ON planned.category_id = category_ids.category_id
+        LEFT JOIN actual
+          ON actual.category_id = category_ids.category_id
+        ORDER BY categories.name
+        """,
+        user_id,
+        comparison_type,
+        plan["id"],
+        comparison_type,
+        user_id,
+        period_start_value,
+        period_end_value,
+        user_id,
+        comparison_type
+    )
+
+    items = []
+
+    for row in rows:
+        planned_amount = report_money(row["planned_amount"])
+        actual_amount = report_money(row["actual_amount"])
+
+        if comparison_type == "income":
+            difference = actual_amount - planned_amount
+        else:
+            difference = planned_amount - actual_amount
+
+        if planned_amount > 0:
+            usage_percent = report_whole_percent(
+                actual_amount,
+                planned_amount
+            )
+        elif actual_amount > 0:
+            usage_percent = 100
+        else:
+            usage_percent = 0
+
+        if difference > 0:
+            difference_prefix = "+"
+            difference_tone = "positive"
+        elif difference < 0:
+            difference_prefix = "-"
+            difference_tone = "negative"
+        else:
+            difference_prefix = ""
+            difference_tone = "neutral"
+
+        items.append({
+            "category_id": row["category_id"],
+            "category_name": row["category_name"],
+            "planned_amount": planned_amount,
+            "actual_amount": actual_amount,
+            "difference_amount": abs(difference),
+            "difference_prefix": difference_prefix,
+            "difference_tone": difference_tone,
+            "usage_percent": usage_percent,
+            "progress_percent": max(0, min(usage_percent, 100)),
+            "is_unplanned": planned_amount == 0 and actual_amount > 0
+        })
+
+    items.sort(
+        key=lambda item: (
+            item["difference_tone"] != "negative",
+            -item["actual_amount"],
+            item["category_name"].casefold()
+        )
+    )
+
+    return {
+        "exists": True,
+        "comparison_type": comparison_type,
+        "items": items
+    }
+
+
+def load_report_account_activity(
+    db,
+    user_id,
+    period_start,
+    period_end
+):
+    """Load activity through accounts, including inactive accounts."""
+    period_start_value = period_start.isoformat()
+    period_end_value = period_end.isoformat()
+    rows = db.execute(
+        """
+        SELECT
+            accounts.id,
+            accounts.name,
+            accounts.type,
+            accounts.active,
+            COALESCE(income_totals.total_income, 0) AS total_income,
+            COALESCE(expense_totals.total_expenses, 0) AS total_expenses
+        FROM accounts
+        LEFT JOIN (
+            SELECT account_id, SUM(amount) AS total_income
+            FROM income
+            WHERE user_id = ?
+              AND date >= ?
+              AND date < ?
+            GROUP BY account_id
+        ) AS income_totals
+          ON income_totals.account_id = accounts.id
+        LEFT JOIN (
+            SELECT account_id, SUM(amount) AS total_expenses
+            FROM expenses
+            WHERE user_id = ?
+              AND date >= ?
+              AND date < ?
+            GROUP BY account_id
+        ) AS expense_totals
+          ON expense_totals.account_id = accounts.id
+        WHERE accounts.user_id = ?
+        ORDER BY accounts.name COLLATE NOCASE
+        """,
+        user_id,
+        period_start_value,
+        period_end_value,
+        user_id,
+        period_start_value,
+        period_end_value,
+        user_id
+    )
+
+    icon_by_type = {
+        "checking": "bi-bank",
+        "savings": "bi-piggy-bank",
+        "cash": "bi-cash-stack",
+        "credit card": "bi-credit-card",
+        "investment": "bi-graph-up-arrow",
+        "other": "bi-wallet2"
+    }
+    class_by_type = {
+        "savings": "reports-account-icon-savings",
+        "cash": "reports-account-icon-cash"
+    }
+    accounts = []
+
+    for row in rows:
+        total_income = report_money(row["total_income"])
+        total_expenses = report_money(row["total_expenses"])
+
+        if total_income == 0 and total_expenses == 0:
+            continue
+
+        accounts.append({
+            "id": row["id"],
+            "name": row["name"],
+            "type_label": row["type"].title(),
+            "active": row["active"] == 1,
+            "income": total_income,
+            "expenses": total_expenses,
+            "activity_total": total_income + total_expenses,
+            "icon": icon_by_type.get(row["type"], "bi-wallet2"),
+            "icon_class": class_by_type.get(row["type"], "")
+        })
+
+    accounts.sort(
+        key=lambda account: (
+            -account["activity_total"],
+            account["name"].casefold()
+        )
+    )
+
+    return accounts
+
+
+def load_reports_data(
+    db,
+    user_id,
+    requested_month=None,
+    comparison_type="expense",
+    today=None
+):
+    """Build the complete server-rendered context for Reports."""
+    get_report_transaction_table(comparison_type)
+    selected_month = parse_report_month(requested_month, today=today)
+    period_start = selected_month
+    period_end = shift_plan_month(selected_month, 1)
+    previous_month = shift_plan_month(selected_month, -1)
+    current_totals = load_report_period_totals(
+        db,
+        user_id,
+        period_start,
+        period_end
+    )
+    previous_totals = load_report_period_totals(
+        db,
+        user_id,
+        previous_month,
+        period_start
+    )
+    net = current_totals["net"]
+    savings_rate = None
+
+    if current_totals["income"] > 0:
+        savings_rate = (
+            net / current_totals["income"] * Decimal("100")
+        ).quantize(
+            ONE_DECIMAL_QUANTIZER,
+            rounding=ROUND_HALF_UP
+        )
+
+    return {
+        "selected_month": selected_month,
+        "selected_month_label": selected_month.strftime("%B %Y"),
+        "selected_month_value": selected_month.strftime("%Y-%m"),
+        "previous_month_label": previous_month.strftime("%B %Y"),
+        "previous_month_value": previous_month.strftime("%Y-%m"),
+        "next_month_value": period_end.strftime("%Y-%m"),
+        "comparison_type": comparison_type,
+        "summary": {
+            **current_totals,
+            "savings_rate": savings_rate
+        },
+        "income_trend": build_report_trend(
+            current_totals["income"],
+            previous_totals["income"],
+            favorable_when="increase"
+        ),
+        "expense_trend": build_report_trend(
+            current_totals["expenses"],
+            previous_totals["expenses"],
+            favorable_when="decrease"
+        ),
+        "chart": load_report_monthly_series(
+            db,
+            user_id,
+            selected_month
+        ),
+        "expense_categories": load_report_category_breakdown(
+            db,
+            user_id,
+            "expense",
+            period_start,
+            period_end
+        ),
+        "income_categories": load_report_category_breakdown(
+            db,
+            user_id,
+            "income",
+            period_start,
+            period_end
+        ),
+        "plan_comparison": load_report_plan_comparison(
+            db,
+            user_id,
+            selected_month,
+            period_end,
+            comparison_type
+        ),
+        "account_activity": load_report_account_activity(
+            db,
+            user_id,
+            period_start,
+            period_end
+        )
+    }

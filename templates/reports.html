@@ -1,5 +1,52 @@
 {% extends "layout.html" %}
 
+{% macro trend_indicator(trend, previous_month_label) %}
+    <div class="reports-trend reports-trend-{{ trend['tone'] }} text-end">
+        <p class="fw-bold mb-0">
+            <i class="bi {{ trend['icon'] }}" aria-hidden="true"></i>
+            {{ trend["amount_change"] | usd }}
+        </p>
+        <p class="small mb-0">
+            {% if trend["percent_change"] is not none %}
+                <i class="bi {{ trend['icon'] }}" aria-hidden="true"></i>
+                {{ trend["percent_change"] }}% from {{ previous_month_label }}
+            {% elif trend["direction"] == "flat" %}
+                No change from {{ previous_month_label }}
+            {% else %}
+                No prior-month percentage
+            {% endif %}
+        </p>
+    </div>
+{% endmacro %}
+
+{% macro category_rows(report, empty_message) %}
+    {% for item in report["items"] %}
+        <div class="reports-category-row">
+            <div class="d-flex align-items-center justify-content-between gap-3 mb-2">
+                <span class="fw-semibold">{{ item["category_name"] }}</span>
+                <span class="small">
+                    <strong>{{ item["amount"] | usd }}</strong>
+                    <span class="text-secondary ms-2">{{ item["percentage"] }}%</span>
+                </span>
+            </div>
+            <div class="reports-category-track">
+                <span
+                    class="reports-category-fill reports-category-color-{{ item['color_index'] }}"
+                    style="width: {{ item['bar_percent'] }}%;"
+                ></span>
+            </div>
+        </div>
+    {% else %}
+        <div class="reports-empty-state text-center py-4">
+            <div class="reports-empty-icon mx-auto mb-2" aria-hidden="true">
+                <i class="bi bi-bar-chart"></i>
+            </div>
+            <p class="fw-semibold mb-1">No activity</p>
+            <p class="small text-secondary mb-0">{{ empty_message }}</p>
+        </div>
+    {% endfor %}
+{% endmacro %}
+
 {% block title %}
     Reports
 {% endblock %}
@@ -11,18 +58,44 @@
 {% block main %}
     <section class="reports-page py-4 py-lg-5">
         <div class="container-xl">
-            <header class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3 mb-4">
+            <header class="d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-3 mb-4">
                 <div>
                     <p class="reports-eyebrow mb-1">Financial insights</p>
                     <h1 class="h2 fw-bold reports-heading mb-1">Reports</h1>
                     <p class="text-secondary mb-0">Understand your income, spending, and financial trends.</p>
                 </div>
 
-                <button class="btn reports-period-selector align-self-start align-self-md-center" type="button" aria-label="Selected reporting period: August 2026">
-                    <i class="bi bi-calendar3" aria-hidden="true"></i>
-                    <span>August 2026</span>
-                    <i class="bi bi-chevron-down reports-period-chevron" aria-hidden="true"></i>
-                </button>
+                <form class="reports-period-form align-self-stretch align-self-lg-center" action="{{ url_for('reports') }}" method="get">
+                    <input name="comparison" type="hidden" value="{{ comparison_type }}">
+                    <a
+                        class="btn reports-month-arrow"
+                        href="{{ url_for('reports', month=previous_month_value, comparison=comparison_type) }}"
+                        aria-label="View {{ previous_month_label }} reports"
+                    >
+                        <i class="bi bi-chevron-left" aria-hidden="true"></i>
+                    </a>
+                    <label class="visually-hidden" for="report-month">Reporting month</label>
+                    <div class="reports-period-input-wrap">
+                        <i class="bi bi-calendar3" aria-hidden="true"></i>
+                        <input
+                            class="form-control reports-period-input"
+                            id="report-month"
+                            name="month"
+                            type="month"
+                            value="{{ selected_month_value }}"
+                            aria-label="Selected reporting month"
+                            required
+                        >
+                    </div>
+                    <button class="btn btn-primary reports-period-submit" type="submit">View</button>
+                    <a
+                        class="btn reports-month-arrow"
+                        href="{{ url_for('reports', month=next_month_value, comparison=comparison_type) }}"
+                        aria-label="View next month reports"
+                    >
+                        <i class="bi bi-chevron-right" aria-hidden="true"></i>
+                    </a>
+                </form>
             </header>
 
             <div class="row g-3 mb-4">
@@ -32,7 +105,7 @@
                             <div class="reports-summary-icon" aria-hidden="true"><i class="bi bi-arrow-down"></i></div>
                             <div>
                                 <p class="small text-secondary mb-1">Income</p>
-                                <p class="h4 fw-bold reports-summary-value mb-0">$6,845.20</p>
+                                <p class="h4 fw-bold reports-summary-value mb-0">{{ summary["income"] | usd }}</p>
                             </div>
                         </div>
                     </article>
@@ -44,7 +117,7 @@
                             <div class="reports-summary-icon" aria-hidden="true"><i class="bi bi-arrow-up"></i></div>
                             <div>
                                 <p class="small text-secondary mb-1">Expenses</p>
-                                <p class="h4 fw-bold reports-summary-value mb-0">$4,120.45</p>
+                                <p class="h4 fw-bold reports-summary-value mb-0">{{ summary["expenses"] | usd }}</p>
                             </div>
                         </div>
                     </article>
@@ -56,7 +129,7 @@
                             <div class="reports-summary-icon" aria-hidden="true"><i class="bi bi-wallet2"></i></div>
                             <div>
                                 <p class="small text-secondary mb-1">Net</p>
-                                <p class="h4 fw-bold reports-summary-value mb-0">$2,724.75</p>
+                                <p class="h4 fw-bold reports-summary-value mb-0">{{ summary["net"] | usd }}</p>
                             </div>
                         </div>
                     </article>
@@ -68,7 +141,13 @@
                             <div class="reports-summary-icon" aria-hidden="true"><i class="bi bi-piggy-bank"></i></div>
                             <div>
                                 <p class="small text-secondary mb-1">Savings Rate</p>
-                                <p class="h4 fw-bold reports-summary-value mb-0">39.8%</p>
+                                <p class="h4 fw-bold reports-summary-value mb-0">
+                                    {% if summary["savings_rate"] is not none %}
+                                        {{ summary["savings_rate"] }}%
+                                    {% else %}
+                                        &mdash;
+                                    {% endif %}
+                                </p>
                             </div>
                         </div>
                     </article>
@@ -86,7 +165,7 @@
                         <div class="d-flex align-items-center gap-2 mb-3">
                             <span class="reports-selected-dot" aria-hidden="true"></span>
                             <p class="small fw-bold text-uppercase text-secondary mb-0">Selected month</p>
-                            <span class="fw-semibold ms-auto">August 2026</span>
+                            <span class="fw-semibold ms-auto">{{ selected_month_label }}</span>
                         </div>
 
                         <div class="row g-3">
@@ -95,12 +174,9 @@
                                     <div class="d-flex align-items-start justify-content-between gap-3">
                                         <div>
                                             <p class="small text-secondary mb-1">Income</p>
-                                            <p class="h3 fw-bold reports-heading mb-0">$6,845.20</p>
+                                            <p class="h3 fw-bold reports-heading mb-0">{{ summary["income"] | usd }}</p>
                                         </div>
-                                        <div class="reports-trend reports-trend-positive text-end">
-                                            <p class="fw-bold mb-0"><i class="bi bi-arrow-up-short" aria-hidden="true"></i>$545.20</p>
-                                            <p class="small mb-0"><i class="bi bi-arrow-up-short" aria-hidden="true"></i>8.7% from July</p>
-                                        </div>
+                                        {{ trend_indicator(income_trend, previous_month_label) }}
                                     </div>
                                 </div>
                             </div>
@@ -110,12 +186,9 @@
                                     <div class="d-flex align-items-start justify-content-between gap-3">
                                         <div>
                                             <p class="small text-secondary mb-1">Expenses</p>
-                                            <p class="h3 fw-bold reports-heading mb-0">$4,120.45</p>
+                                            <p class="h3 fw-bold reports-heading mb-0">{{ summary["expenses"] | usd }}</p>
                                         </div>
-                                        <div class="reports-trend reports-trend-positive text-end">
-                                            <p class="fw-bold mb-0"><i class="bi bi-arrow-down-short" aria-hidden="true"></i>$380.55</p>
-                                            <p class="small mb-0"><i class="bi bi-arrow-down-short" aria-hidden="true"></i>8.5% from July</p>
-                                        </div>
+                                        {{ trend_indicator(expense_trend, previous_month_label) }}
                                     </div>
                                 </div>
                             </div>
@@ -123,68 +196,45 @@
                     </div>
 
                     <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
-                        <p class="small fw-semibold text-secondary mb-0">March–August 2026</p>
+                        <p class="small fw-semibold text-secondary mb-0">{{ chart["range_label"] }}</p>
                         <div class="d-flex align-items-center gap-3" aria-label="Chart legend">
                             <span class="reports-legend-item"><span class="reports-legend-swatch reports-legend-income"></span>Income</span>
                             <span class="reports-legend-item"><span class="reports-legend-swatch reports-legend-expenses"></span>Expenses</span>
                         </div>
                     </div>
 
-                    <div class="reports-chart" role="img" aria-label="Grouped bar chart showing income and expenses from March through August 2026. August is selected.">
+                    <div class="reports-chart" role="group" aria-label="Income and expenses for {{ chart['range_label'] }}">
                         <div class="reports-chart-grid" aria-hidden="true">
                             <span></span><span></span><span></span><span></span>
                         </div>
 
                         <div class="reports-chart-columns" aria-hidden="true">
-                            <div class="reports-chart-month">
-                                <div class="reports-chart-bars">
-                                    <span class="reports-chart-bar reports-chart-income" style="--bar-height: 78%;"></span>
-                                    <span class="reports-chart-bar reports-chart-expenses" style="--bar-height: 57%;"></span>
+                            {% for month in chart["months"] %}
+                                <div class="reports-chart-month {% if month['is_selected'] %}reports-chart-month-selected{% endif %}">
+                                    {% if month["is_selected"] %}
+                                        <span class="reports-selected-badge">Selected</span>
+                                    {% endif %}
+                                    <div class="reports-chart-bars">
+                                        <span
+                                            class="reports-chart-bar reports-chart-income {% if month['income'] == 0 %}is-empty{% endif %}"
+                                            style="--bar-height: {{ month['income_height'] }}%;"
+                                        ></span>
+                                        <span
+                                            class="reports-chart-bar reports-chart-expenses {% if month['expenses'] == 0 %}is-empty{% endif %}"
+                                            style="--bar-height: {{ month['expenses_height'] }}%;"
+                                        ></span>
+                                    </div>
+                                    <span class="reports-chart-label">{{ month["label"] }}</span>
                                 </div>
-                                <span class="reports-chart-label">Mar</span>
-                            </div>
-                            <div class="reports-chart-month">
-                                <div class="reports-chart-bars">
-                                    <span class="reports-chart-bar reports-chart-income" style="--bar-height: 82%;"></span>
-                                    <span class="reports-chart-bar reports-chart-expenses" style="--bar-height: 59%;"></span>
-                                </div>
-                                <span class="reports-chart-label">Apr</span>
-                            </div>
-                            <div class="reports-chart-month">
-                                <div class="reports-chart-bars">
-                                    <span class="reports-chart-bar reports-chart-income" style="--bar-height: 80%;"></span>
-                                    <span class="reports-chart-bar reports-chart-expenses" style="--bar-height: 54%;"></span>
-                                </div>
-                                <span class="reports-chart-label">May</span>
-                            </div>
-                            <div class="reports-chart-month">
-                                <div class="reports-chart-bars">
-                                    <span class="reports-chart-bar reports-chart-income" style="--bar-height: 86%;"></span>
-                                    <span class="reports-chart-bar reports-chart-expenses" style="--bar-height: 58%;"></span>
-                                </div>
-                                <span class="reports-chart-label">Jun</span>
-                            </div>
-                            <div class="reports-chart-month">
-                                <div class="reports-chart-bars">
-                                    <span class="reports-chart-bar reports-chart-income" style="--bar-height: 83%;"></span>
-                                    <span class="reports-chart-bar reports-chart-expenses" style="--bar-height: 60%;"></span>
-                                </div>
-                                <span class="reports-chart-label">Jul</span>
-                            </div>
-                            <div class="reports-chart-month reports-chart-month-selected">
-                                <span class="reports-selected-badge">Selected</span>
-                                <div class="reports-chart-bars">
-                                    <span class="reports-chart-bar reports-chart-income" style="--bar-height: 91%;"></span>
-                                    <span class="reports-chart-bar reports-chart-expenses" style="--bar-height: 55%;"></span>
-                                </div>
-                                <span class="reports-chart-label">Aug</span>
-                            </div>
+                            {% endfor %}
                         </div>
                     </div>
 
-                    <div class="visually-hidden">
-                        March: income $5,900, expenses $4,300. April: income $6,200, expenses $4,450. May: income $6,050, expenses $4,100. June: income $6,500, expenses $4,350. July: income $6,300, expenses $4,501. August: income $6,845, expenses $4,120.
-                    </div>
+                    <ul class="visually-hidden">
+                        {% for month in chart["months"] %}
+                            <li>{{ month["full_label"] }}: income {{ month["income"] | usd }}, expenses {{ month["expenses"] | usd }}.</li>
+                        {% endfor %}
+                    </ul>
                 </div>
             </article>
 
@@ -193,43 +243,8 @@
                     <article class="card reports-card h-100">
                         <div class="card-body p-3 p-md-4">
                             <h2 class="h4 fw-bold reports-heading mb-1">Expenses by Category</h2>
-                            <p class="text-secondary mb-4">Where your money went during the selected month.</p>
-
-                            <div class="reports-category-row">
-                                <div class="d-flex align-items-center justify-content-between gap-3 mb-2">
-                                    <span class="fw-semibold">Housing</span>
-                                    <span class="small"><strong>$2,000</strong><span class="text-secondary ms-2">48%</span></span>
-                                </div>
-                                <div class="reports-category-track"><span class="reports-category-fill reports-category-housing" style="width: 48%;"></span></div>
-                            </div>
-                            <div class="reports-category-row">
-                                <div class="d-flex align-items-center justify-content-between gap-3 mb-2">
-                                    <span class="fw-semibold">Groceries</span>
-                                    <span class="small"><strong>$700</strong><span class="text-secondary ms-2">17%</span></span>
-                                </div>
-                                <div class="reports-category-track"><span class="reports-category-fill reports-category-groceries" style="width: 17%;"></span></div>
-                            </div>
-                            <div class="reports-category-row">
-                                <div class="d-flex align-items-center justify-content-between gap-3 mb-2">
-                                    <span class="fw-semibold">Transportation</span>
-                                    <span class="small"><strong>$400</strong><span class="text-secondary ms-2">10%</span></span>
-                                </div>
-                                <div class="reports-category-track"><span class="reports-category-fill reports-category-transportation" style="width: 10%;"></span></div>
-                            </div>
-                            <div class="reports-category-row">
-                                <div class="d-flex align-items-center justify-content-between gap-3 mb-2">
-                                    <span class="fw-semibold">Utilities</span>
-                                    <span class="small"><strong>$300</strong><span class="text-secondary ms-2">7%</span></span>
-                                </div>
-                                <div class="reports-category-track"><span class="reports-category-fill reports-category-utilities" style="width: 7%;"></span></div>
-                            </div>
-                            <div class="reports-category-row">
-                                <div class="d-flex align-items-center justify-content-between gap-3 mb-2">
-                                    <span class="fw-semibold">Other</span>
-                                    <span class="small"><strong>$720</strong><span class="text-secondary ms-2">18%</span></span>
-                                </div>
-                                <div class="reports-category-track"><span class="reports-category-fill reports-category-other" style="width: 18%;"></span></div>
-                            </div>
+                            <p class="text-secondary mb-4">Where your money went during {{ selected_month_label }}.</p>
+                            {{ category_rows(expense_categories, "No expenses were recorded for this month.") }}
                         </div>
                     </article>
                 </div>
@@ -238,32 +253,8 @@
                     <article class="card reports-card h-100">
                         <div class="card-body p-3 p-md-4">
                             <h2 class="h4 fw-bold reports-heading mb-1">Income by Category</h2>
-                            <p class="text-secondary mb-4">Where your income came from during the selected month.</p>
-
-                            <div class="reports-category-row">
-                                <div class="d-flex align-items-center justify-content-between gap-3 mb-2">
-                                    <span class="fw-semibold">Salary</span><strong class="small">$5,000</strong>
-                                </div>
-                                <div class="reports-category-track"><span class="reports-category-fill reports-income-salary" style="width: 73%;"></span></div>
-                            </div>
-                            <div class="reports-category-row">
-                                <div class="d-flex align-items-center justify-content-between gap-3 mb-2">
-                                    <span class="fw-semibold">Freelance</span><strong class="small">$1,200</strong>
-                                </div>
-                                <div class="reports-category-track"><span class="reports-category-fill reports-income-freelance" style="width: 18%;"></span></div>
-                            </div>
-                            <div class="reports-category-row">
-                                <div class="d-flex align-items-center justify-content-between gap-3 mb-2">
-                                    <span class="fw-semibold">Interest</span><strong class="small">$200</strong>
-                                </div>
-                                <div class="reports-category-track"><span class="reports-category-fill reports-income-interest" style="width: 3%;"></span></div>
-                            </div>
-                            <div class="reports-category-row">
-                                <div class="d-flex align-items-center justify-content-between gap-3 mb-2">
-                                    <span class="fw-semibold">Other</span><strong class="small">$445.20</strong>
-                                </div>
-                                <div class="reports-category-track"><span class="reports-category-fill reports-income-other" style="width: 6%;"></span></div>
-                            </div>
+                            <p class="text-secondary mb-4">Where your income came from during {{ selected_month_label }}.</p>
+                            {{ category_rows(income_categories, "No income was recorded for this month.") }}
                         </div>
                     </article>
                 </div>
@@ -271,69 +262,96 @@
 
             <article class="card reports-card mb-4">
                 <div class="card-body p-0">
-                    <div class="p-3 p-md-4 pb-md-3">
-                        <h2 class="h4 fw-bold reports-heading mb-1">Plan vs Actual</h2>
-                        <p class="text-secondary mb-0">See how your actual spending compares with your monthly plan.</p>
+                    <div class="d-flex flex-column flex-md-row align-items-md-start justify-content-between gap-3 p-3 p-md-4 pb-md-3">
+                        <div>
+                            <h2 class="h4 fw-bold reports-heading mb-1">Plan vs Actual</h2>
+                            <p class="text-secondary mb-0">
+                                {% if comparison_type == "income" %}
+                                    See how received income compares with your monthly income plan.
+                                {% else %}
+                                    See how actual spending compares with your monthly expense plan.
+                                {% endif %}
+                            </p>
+                        </div>
+
+                        <nav class="reports-plan-tabs" aria-label="Plan comparison type">
+                            <a
+                                class="reports-plan-tab {% if comparison_type == 'income' %}active{% endif %}"
+                                href="{{ url_for('reports', month=selected_month_value, comparison='income') }}"
+                                {% if comparison_type == "income" %}aria-current="page"{% endif %}
+                            >Income</a>
+                            <span class="reports-plan-tab-divider" aria-hidden="true"></span>
+                            <a
+                                class="reports-plan-tab {% if comparison_type == 'expense' %}active{% endif %}"
+                                href="{{ url_for('reports', month=selected_month_value, comparison='expense') }}"
+                                {% if comparison_type == "expense" %}aria-current="page"{% endif %}
+                            >Expenses</a>
+                        </nav>
                     </div>
 
-                    <div class="table-responsive reports-table-wrap">
-                        <table class="table reports-plan-table align-middle mb-0">
-                            <thead>
-                                <tr>
-                                    <th scope="col">Category</th>
-                                    <th scope="col">Planned</th>
-                                    <th scope="col">Actual</th>
-                                    <th scope="col" class="text-end">Difference</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <th scope="row" data-label="Category">Groceries</th>
-                                    <td data-label="Planned">$700</td>
-                                    <td data-label="Actual">
-                                        <span class="fw-semibold">$540</span>
-                                        <div class="progress reports-plan-progress mt-2" role="progressbar" aria-label="Groceries actual spending" aria-valuenow="77" aria-valuemin="0" aria-valuemax="100">
-                                            <div class="progress-bar reports-plan-under" style="width: 77%;"></div>
-                                        </div>
-                                    </td>
-                                    <td data-label="Difference" class="text-end"><span class="reports-difference reports-difference-positive">+$160</span></td>
-                                </tr>
-                                <tr>
-                                    <th scope="row" data-label="Category">Transportation</th>
-                                    <td data-label="Planned">$400</td>
-                                    <td data-label="Actual">
-                                        <span class="fw-semibold">$470</span>
-                                        <div class="progress reports-plan-progress mt-2" role="progressbar" aria-label="Transportation actual spending" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100">
-                                            <div class="progress-bar reports-plan-over" style="width: 100%;"></div>
-                                        </div>
-                                    </td>
-                                    <td data-label="Difference" class="text-end"><span class="reports-difference reports-difference-negative">-$70</span></td>
-                                </tr>
-                                <tr>
-                                    <th scope="row" data-label="Category">Utilities</th>
-                                    <td data-label="Planned">$300</td>
-                                    <td data-label="Actual">
-                                        <span class="fw-semibold">$260</span>
-                                        <div class="progress reports-plan-progress mt-2" role="progressbar" aria-label="Utilities actual spending" aria-valuenow="87" aria-valuemin="0" aria-valuemax="100">
-                                            <div class="progress-bar reports-plan-under" style="width: 87%;"></div>
-                                        </div>
-                                    </td>
-                                    <td data-label="Difference" class="text-end"><span class="reports-difference reports-difference-positive">+$40</span></td>
-                                </tr>
-                                <tr>
-                                    <th scope="row" data-label="Category">Entertainment</th>
-                                    <td data-label="Planned">$300</td>
-                                    <td data-label="Actual">
-                                        <span class="fw-semibold">$340</span>
-                                        <div class="progress reports-plan-progress mt-2" role="progressbar" aria-label="Entertainment actual spending" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100">
-                                            <div class="progress-bar reports-plan-over" style="width: 100%;"></div>
-                                        </div>
-                                    </td>
-                                    <td data-label="Difference" class="text-end"><span class="reports-difference reports-difference-negative">-$40</span></td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
+                    {% if plan_comparison["exists"] %}
+                        <div class="table-responsive reports-table-wrap">
+                            <table class="table reports-plan-table align-middle mb-0">
+                                <thead>
+                                    <tr>
+                                        <th scope="col">Category</th>
+                                        <th scope="col">Planned</th>
+                                        <th scope="col">Actual</th>
+                                        <th scope="col" class="text-end">Difference</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in plan_comparison["items"] %}
+                                        <tr>
+                                            <th scope="row" data-label="Category">
+                                                {{ item["category_name"] }}
+                                                {% if item["is_unplanned"] %}
+                                                    <span class="badge rounded-pill text-bg-warning ms-1">Unplanned</span>
+                                                {% endif %}
+                                            </th>
+                                            <td data-label="Planned">{{ item["planned_amount"] | usd }}</td>
+                                            <td data-label="Actual">
+                                                <span class="fw-semibold">{{ item["actual_amount"] | usd }}</span>
+                                                <div
+                                                    class="progress reports-plan-progress mt-2"
+                                                    role="progressbar"
+                                                    aria-label="{{ item['category_name'] }} actual {{ comparison_type }}"
+                                                    aria-valuenow="{{ item['progress_percent'] }}"
+                                                    aria-valuemin="0"
+                                                    aria-valuemax="100"
+                                                >
+                                                    <div
+                                                        class="progress-bar reports-plan-{{ item['difference_tone'] }}"
+                                                        style="width: {{ item['progress_percent'] }}%;"
+                                                    ></div>
+                                                </div>
+                                            </td>
+                                            <td data-label="Difference" class="text-end">
+                                                <span class="reports-difference reports-difference-{{ item['difference_tone'] }}">
+                                                    {{ item["difference_prefix"] }}{{ item["difference_amount"] | usd }}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    {% else %}
+                                        <tr>
+                                            <td class="reports-plan-empty text-center text-secondary py-5" colspan="4">
+                                                No {{ comparison_type }} categories are available for this comparison.
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="reports-empty-state text-center p-4 p-md-5 border-top">
+                            <div class="reports-empty-icon mx-auto mb-2" aria-hidden="true">
+                                <i class="bi bi-calendar2-plus"></i>
+                            </div>
+                            <p class="fw-semibold mb-1">No plan for {{ selected_month_label }}</p>
+                            <p class="small text-secondary mb-3">Create a monthly plan to compare it with actual activity.</p>
+                            <a class="btn btn-outline-primary" href="{{ url_for('plan', month=selected_month_value) }}">Go to Plan</a>
+                        </div>
+                    {% endif %}
                 </div>
             </article>
 
@@ -344,77 +362,46 @@
                 </div>
 
                 <div class="row g-3">
-                    <div class="col-12 col-md-6 col-xl-4">
-                        <article class="card reports-card reports-account-card h-100">
-                            <div class="card-body p-3 p-md-4">
-                                <div class="d-flex align-items-center gap-3 mb-4">
-                                    <div class="reports-account-icon" aria-hidden="true"><i class="bi bi-bank"></i></div>
-                                    <div>
-                                        <h3 class="h5 fw-bold mb-1">Main Checking</h3>
-                                        <span class="reports-account-type">Checking</span>
+                    {% for account in account_activity %}
+                        <div class="col-12 col-md-6 col-xl-4">
+                            <article class="card reports-card reports-account-card h-100">
+                                <div class="card-body p-3 p-md-4">
+                                    <div class="d-flex align-items-center gap-3 mb-4">
+                                        <div class="reports-account-icon {{ account['icon_class'] }}" aria-hidden="true">
+                                            <i class="bi {{ account['icon'] }}"></i>
+                                        </div>
+                                        <div class="min-w-0">
+                                            <h3 class="h5 fw-bold text-truncate mb-1">{{ account["name"] }}</h3>
+                                            <span class="reports-account-type">{{ account["type_label"] }}</span>
+                                            {% if not account["active"] %}
+                                                <span class="badge rounded-pill text-bg-secondary ms-1">Inactive</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="row g-3 reports-account-totals">
+                                        <div class="col-6">
+                                            <p class="small text-secondary mb-1">Income</p>
+                                            <p class="fw-bold text-success mb-0">{{ account["income"] | usd }}</p>
+                                        </div>
+                                        <div class="col-6 text-end">
+                                            <p class="small text-secondary mb-1">Expenses</p>
+                                            <p class="fw-bold text-danger mb-0">{{ account["expenses"] | usd }}</p>
+                                        </div>
                                     </div>
                                 </div>
-                                <div class="row g-3 reports-account-totals">
-                                    <div class="col-6">
-                                        <p class="small text-secondary mb-1">Income</p>
-                                        <p class="fw-bold text-success mb-0">$5,900</p>
-                                    </div>
-                                    <div class="col-6 text-end">
-                                        <p class="small text-secondary mb-1">Expenses</p>
-                                        <p class="fw-bold text-danger mb-0">$3,800</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </article>
-                    </div>
-
-                    <div class="col-12 col-md-6 col-xl-4">
-                        <article class="card reports-card reports-account-card h-100">
-                            <div class="card-body p-3 p-md-4">
-                                <div class="d-flex align-items-center gap-3 mb-4">
-                                    <div class="reports-account-icon reports-account-icon-savings" aria-hidden="true"><i class="bi bi-piggy-bank"></i></div>
-                                    <div>
-                                        <h3 class="h5 fw-bold mb-1">Savings</h3>
-                                        <span class="reports-account-type">Savings</span>
-                                    </div>
-                                </div>
-                                <div class="row g-3 reports-account-totals">
-                                    <div class="col-6">
-                                        <p class="small text-secondary mb-1">Income</p>
-                                        <p class="fw-bold text-success mb-0">$700</p>
-                                    </div>
-                                    <div class="col-6 text-end">
-                                        <p class="small text-secondary mb-1">Expenses</p>
-                                        <p class="fw-bold text-danger mb-0">$200</p>
-                                    </div>
+                            </article>
+                        </div>
+                    {% else %}
+                        <div class="col-12">
+                            <div class="card reports-card">
+                                <div class="reports-empty-state card-body text-center p-5">
+                                    <div class="reports-empty-icon mx-auto mb-2" aria-hidden="true"><i class="bi bi-wallet2"></i></div>
+                                    <p class="fw-semibold mb-1">No account activity</p>
+                                    <p class="small text-secondary mb-0">No income or expenses moved through an account during {{ selected_month_label }}.</p>
                                 </div>
                             </div>
-                        </article>
-                    </div>
-
-                    <div class="col-12 col-md-6 col-xl-4">
-                        <article class="card reports-card reports-account-card h-100">
-                            <div class="card-body p-3 p-md-4">
-                                <div class="d-flex align-items-center gap-3 mb-4">
-                                    <div class="reports-account-icon reports-account-icon-cash" aria-hidden="true"><i class="bi bi-cash-stack"></i></div>
-                                    <div>
-                                        <h3 class="h5 fw-bold mb-1">Cash</h3>
-                                        <span class="reports-account-type">Cash</span>
-                                    </div>
-                                </div>
-                                <div class="row g-3 reports-account-totals">
-                                    <div class="col-6">
-                                        <p class="small text-secondary mb-1">Income</p>
-                                        <p class="fw-bold text-success mb-0">$245</p>
-                                    </div>
-                                    <div class="col-6 text-end">
-                                        <p class="small text-secondary mb-1">Expenses</p>
-                                        <p class="fw-bold text-danger mb-0">$120</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </article>
-                    </div>
+                        </div>
+                    {% endfor %}
                 </div>
             </section>
         </div>

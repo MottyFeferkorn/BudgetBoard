@@ -20,6 +20,7 @@ from helpers import (
     load_budget_plan_items,
     load_accounts,
     load_dashboard_data,
+    load_reports_data,
     load_saved_plan_months,
     load_recurrent_events,
     load_user_categories,
@@ -839,4 +840,22 @@ def accounts():
 @app.route("/reports")
 @login_required
 def reports():
-    return render_template("reports.html")
+    try:
+        report_data = load_reports_data(
+            db,
+            session["user_id"],
+            requested_month=request.args.get("month"),
+            comparison_type=request.args.get("comparison", "expense"),
+            today=date.today()
+        )
+    except ValidationError as error:
+        flash(str(error), "danger")
+        return redirect(
+            url_for(
+                "reports",
+                month=date.today().strftime("%Y-%m"),
+                comparison="expense"
+            )
+        )
+
+    return render_template("reports.html", **report_data)
