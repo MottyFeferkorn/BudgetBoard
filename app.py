@@ -19,6 +19,7 @@ from helpers import (
     get_or_create_category,
     load_budget_plan_items,
     load_accounts,
+    load_dashboard_data,
     load_saved_plan_months,
     load_recurrent_events,
     load_user_categories,
@@ -69,33 +70,13 @@ def index():
     if not user_id:
         return render_template("home.html")
 
-    # Reuse the account and category loaders for the Dashboard add forms.
-    accounts, _, _, _ = load_accounts(db, user_id, 1)
-    categories = load_user_categories(db, user_id)
-    income_categories = [
-        category
-        for category in categories
-        if category["type"] == "income"
-    ]
-    expense_categories = [
-        category
-        for category in categories
-        if category["type"] == "expense"
-    ]
-    add_form_data = {
-        "amount": "",
-        "category": "",
-        "description": "",
-        "account_id": "",
-        "date": date.today().isoformat()
-    }
-
     return render_template(
         "index.html",
-        accounts=accounts,
-        income_categories=income_categories,
-        expense_categories=expense_categories,
-        add_form_data=add_form_data
+        **load_dashboard_data(
+            db,
+            user_id,
+            today=date.today()
+        )
     )
 
 @app.route("/register", methods=["GET", "POST"])

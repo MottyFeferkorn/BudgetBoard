@@ -831,6 +831,480 @@ def load_accounts(db, user_id, active_value):
     return account_rows, total_income, total_expenses, total_balance
 
 
+def get_dashboard_month_bounds(today=None):
+    """Return the first day of the current and following months."""
+    current_date = today or date.today()
+    month_start = current_date.replace(day=1)
+    next_month = shift_plan_month(month_start, 1)
+
+    return month_start, next_month
+
+
+def load_dashboard_month_summary(
+    db,
+    user_id,
+    month_start,
+    next_month
+):
+    """Load current-month income, expenses, and remaining cash flow."""
+    row = db.execute(
+        """
+        SELECT
+            COALESCE(
+                (
+                    SELECT SUM(amount)
+                    FROM income
+                    WHERE user_id = ?
+                      AND date >= ?
+                      AND date < ?
+                ),
+                0
+            ) AS income_this_month,
+            COALESCE(
+                (
+                    SELECT SUM(amount)
+                    FROM expenses
+                    WHERE user_id = ?
+                      AND date >= ?
+                      AND date < ?
+                ),
+                0
+            ) AS expenses_this_month
+        """,
+        user_id,
+        month_start.isoformat(),
+        next_month.isoformat(),
+        user_id,
+        month_start.isoformat(),
+        next_month.isoformat()
+    )[0]
+
+    income_this_month = Decimal(
+        str(row["income_this_month"] or 0)
+    ).quantize(
+        Decimal("0.01")
+    )
+    expenses_this_month = Decimal(
+        str(row["expenses_this_month"] or 0)
+    ).quantize(
+        Decimal("0.01")
+    )
+
+    return {
+        "income_this_month": income_this_month,
+        "expenses_this_month": expenses_this_month,
+        "remaining": income_this_month - expenses_this_month
+    }
+
+
+def load_dashboard_plan(
+    db,
+    user_id,
+    month_start,
+    next_month
+):
+    """Load up to four planned expense categories for the Dashboard."""
+    plan = get_budget_plan(
+        db,
+        user_id,
+        month_start.isoformat()
+    )
+
+    if not plan:
+        return {
+            "exists": False,
+            "month_label": month_start.strftime("%B %Y"),
+            "items": []
+        }
+
+    rows = db.execute(
+        """
+        SELECT
+            budget_plan_items.id,
+            budget_plan_items.category_id,
+            categories.name AS category_name,
+            budget_plan_items.amount AS planned_amount,
+            COALESCE(SUM(expenses.amount), 0) AS actual_amount
+        FROM budget_plan_items
+        JOIN budget_plans
+          ON budget_plans.id = budget_plan_items.plan_id
+         AND budget_plans.user_id = ?
+        JOIN categories
+          ON categories.id = budget_plan_items.category_id
+         AND categories.user_id = budget_plans.user_id
+         AND categories.type = 'expense'
+        LEFT JOIN expenses
+          ON expenses.category_id = budget_plan_items.category_id
+         AND expenses.user_id = budget_plans.user_id
+         AND expenses.date >= ?
+         AND expenses.date < ?
+        WHERE budget_plan_items.plan_id = ?
+        GROUP BY
+            budget_plan_items.id,
+            budget_plan_items.category_id,
+            categories.name,
+            budget_plan_items.amount
+        ORDER BY categories.name COLLATE NOCASE
+        """,
+        user_id,
+        month_start.isoformat(),
+        next_month.isoformat(),
+        plan["id"]
+    )
+
+    plan_items = []
+
+    for row in rows:
+        planned_amount = Decimal(
+            str(row["planned_amount"] or 0)
+        ).quantize(
+            Decimal("0.01")
+        )
+        actual_amount = Decimal(
+            str(row["actual_amount"] or 0)
+        ).quantize(
+            Decimal("0.01")
+        )
+
+        if planned_amount > 0:
+            usage_percent = int(
+                (
+                    actual_amount
+                    / planned_amount
+                    * Decimal("100")
+                ).quantize(
+                    Decimal("1")
+                )
+            )
+        elif actual_amount > 0:
+            usage_percent = 100
+        else:
+            usage_percent = 0
+
+        over_amount = max(
+            actual_amount - planned_amount,
+            Decimal("0.00")
+        )
+
+        plan_items.append({
+            "id": row["id"],
+            "category_id": row["category_id"],
+            "category_name": row["category_name"],
+            "planned_amount": planned_amount,
+            "actual_amount": actual_amount,
+            "usage_percent": usage_percent,
+            "progress_percent": min(usage_percent, 100),
+            "is_over": actual_amount > planned_amount,
+            "over_amount": over_amount
+        })
+
+    plan_items.sort(
+        key=lambda item: item["actual_amount"],
+        reverse=True
+    )
+
+    selected_items = []
+
+    for item in plan_items:
+        if len(selected_items) == 4:
+            break
+
+        if item["is_over"]:
+            selected_items.append(item)
+
+    remaining_items = [
+        item
+        for item in plan_items
+        if item not in selected_items
+    ]
+
+    while len(selected_items) < 4 and remaining_items:
+        highest_percentage_item = max(
+            remaining_items,
+            key=lambda item: (
+                item["usage_percent"],
+                item["actual_amount"]
+            )
+        )
+
+        selected_items.append(highest_percentage_item)
+        remaining_items.remove(highest_percentage_item)
+
+    return {
+        "exists": True,
+        "month_label": month_start.strftime("%B %Y"),
+        "items": selected_items
+    }
+
+
+def load_dashboard_spending(
+    db,
+    user_id,
+    month_start,
+    next_month
+):
+    """Load current-month expense distribution by category."""
+    rows = db.execute(
+        """
+        SELECT
+            categories.id AS category_id,
+            categories.name AS category_name,
+            COALESCE(SUM(expenses.amount), 0) AS amount
+        FROM expenses
+        JOIN categories
+          ON categories.id = expenses.category_id
+         AND categories.user_id = expenses.user_id
+         AND categories.type = 'expense'
+        WHERE expenses.user_id = ?
+          AND expenses.date >= ?
+          AND expenses.date < ?
+        GROUP BY
+            categories.id,
+            categories.name
+        ORDER BY
+            amount DESC,
+            categories.name COLLATE NOCASE
+        """,
+        user_id,
+        month_start.isoformat(),
+        next_month.isoformat()
+    )
+
+    category_rows = []
+    other_amount = Decimal("0.00")
+    total_spending = Decimal("0.00")
+
+    for row in rows:
+        amount = Decimal(
+            str(row["amount"] or 0)
+        ).quantize(
+            Decimal("0.01")
+        )
+        total_spending += amount
+
+        if row["category_name"].strip().lower() == "other":
+            other_amount += amount
+        else:
+            category_rows.append({
+                "category_id": row["category_id"],
+                "category_name": row["category_name"],
+                "amount": amount
+            })
+
+    visible_rows = category_rows[:4]
+
+    for row in category_rows[4:]:
+        other_amount += row["amount"]
+
+    if other_amount > 0:
+        visible_rows.append({
+            "category_id": None,
+            "category_name": "Other",
+            "amount": other_amount
+        })
+
+    colors = [
+        "#6366f1",
+        "#198754",
+        "#0891b2",
+        "#f59e0b",
+        "#94a3b8"
+    ]
+
+    for index, row in enumerate(visible_rows):
+        if total_spending > 0:
+            percentage = int(
+                (
+                    row["amount"]
+                    / total_spending
+                    * Decimal("100")
+                ).quantize(
+                    Decimal("1")
+                )
+            )
+        else:
+            percentage = 0
+
+        row["percentage"] = percentage
+        row["color"] = colors[index]
+
+    return {
+        "total": total_spending,
+        "categories": visible_rows
+    }
+
+
+def load_dashboard_activity(db, user_id):
+    """Load the user's five most recent income and expense entries."""
+    rows = db.execute(
+        """
+        SELECT *
+        FROM (
+            SELECT
+                income.id,
+                'income' AS transaction_type,
+                income.amount,
+                COALESCE(income.description, '') AS description,
+                categories.name AS category_name,
+                accounts.name AS account_name,
+                date(income.date) AS transaction_date,
+                income.added_at
+            FROM income
+            JOIN categories
+              ON categories.id = income.category_id
+             AND categories.user_id = income.user_id
+            JOIN accounts
+              ON accounts.id = income.account_id
+             AND accounts.user_id = income.user_id
+            WHERE income.user_id = ?
+
+            UNION ALL
+
+            SELECT
+                expenses.id,
+                'expense' AS transaction_type,
+                expenses.amount,
+                COALESCE(expenses.description, '') AS description,
+                categories.name AS category_name,
+                accounts.name AS account_name,
+                date(expenses.date) AS transaction_date,
+                expenses.added_at
+            FROM expenses
+            JOIN categories
+              ON categories.id = expenses.category_id
+             AND categories.user_id = expenses.user_id
+            JOIN accounts
+              ON accounts.id = expenses.account_id
+             AND accounts.user_id = expenses.user_id
+            WHERE expenses.user_id = ?
+        ) AS recent_activity
+        ORDER BY
+            transaction_date DESC,
+            added_at DESC,
+            id DESC
+        LIMIT 5
+        """,
+        user_id,
+        user_id
+    )
+
+    activity = []
+
+    for row in rows:
+        transaction_date = datetime.strptime(
+            row["transaction_date"],
+            "%Y-%m-%d"
+        ).date()
+        is_income = row["transaction_type"] == "income"
+
+        activity.append({
+            "id": row["id"],
+            "transaction_type": row["transaction_type"],
+            "date": row["transaction_date"],
+            "date_label": (
+                f"{transaction_date.strftime('%b')} "
+                f"{transaction_date.day}, "
+                f"{transaction_date.year}"
+            ),
+            "description": row["description"],
+            "category_name": row["category_name"],
+            "account_name": row["account_name"],
+            "amount": Decimal(
+                str(row["amount"] or 0)
+            ).quantize(
+                Decimal("0.01")
+            ),
+            "amount_prefix": "+" if is_income else "-",
+            "amount_class": (
+                "text-success" if is_income else "text-danger"
+            ),
+            "icon": (
+                "bi-arrow-down" if is_income else "bi-arrow-up"
+            ),
+            "icon_class": (
+                "dashboard-activity-income"
+                if is_income
+                else "dashboard-activity-expense"
+            )
+        })
+
+    return activity
+
+
+def load_dashboard_data(db, user_id, today=None):
+    """Build the complete read-only context for the Dashboard."""
+    current_date = today or date.today()
+    month_start, next_month = get_dashboard_month_bounds(current_date)
+    accounts, _, _, total_balance = load_accounts(db, user_id, 1)
+    categories = load_user_categories(db, user_id)
+    month_summary = load_dashboard_month_summary(
+        db,
+        user_id,
+        month_start,
+        next_month
+    )
+    monthly_plan = load_dashboard_plan(
+        db,
+        user_id,
+        month_start,
+        next_month
+    )
+    spending = load_dashboard_spending(
+        db,
+        user_id,
+        month_start,
+        next_month
+    )
+
+    income_categories = [
+        category
+        for category in categories
+        if category["type"] == "income"
+    ]
+    expense_categories = [
+        category
+        for category in categories
+        if category["type"] == "expense"
+    ]
+    dashboard_accounts = sorted(
+        accounts,
+        key=lambda account: Decimal(
+            str(account["balance"] or 0)
+        ),
+        reverse=True
+    )[:3]
+
+    return {
+        "summary": {
+            "total_balance": Decimal(
+                str(total_balance or 0)
+            ).quantize(
+                Decimal("0.01")
+            ),
+            "income_this_month": month_summary["income_this_month"],
+            "expenses_this_month": month_summary["expenses_this_month"],
+            "remaining": month_summary["remaining"]
+        },
+        "monthly_plan": monthly_plan,
+        "spending_categories": spending["categories"],
+        "monthly_spending": spending["total"],
+        "recent_activity": load_dashboard_activity(db, user_id),
+        "dashboard_accounts": dashboard_accounts,
+        "accounts": accounts,
+        "income_categories": income_categories,
+        "expense_categories": expense_categories,
+        "dashboard_month_label": month_start.strftime("%B %Y"),
+        "dashboard_month_value": month_start.strftime("%Y-%m"),
+        "add_form_data": {
+            "amount": "",
+            "category": "",
+            "description": "",
+            "account_id": "",
+            "date": current_date.isoformat()
+        }
+    }
+
+
 def get_transaction_settings(transaction_table):
     """Return trusted display and SQL settings for a transaction page."""
     transaction_settings = {

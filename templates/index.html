@@ -375,7 +375,7 @@
                             </div>
                             <div class="min-w-0">
                                 <p class="small text-secondary mb-1">Total Balance</p>
-                                <p class="h4 fw-bold dashboard-summary-value mb-0">$18,250.00</p>
+                                <p class="h4 fw-bold dashboard-summary-value mb-0">{{ summary["total_balance"] | usd }}</p>
                             </div>
                         </div>
                     </article>
@@ -389,7 +389,7 @@
                             </div>
                             <div class="min-w-0">
                                 <p class="small text-secondary mb-1">Income This Month</p>
-                                <p class="h4 fw-bold dashboard-summary-value mb-0">$6,845.20</p>
+                                <p class="h4 fw-bold dashboard-summary-value mb-0">{{ summary["income_this_month"] | usd }}</p>
                             </div>
                         </div>
                     </article>
@@ -403,7 +403,7 @@
                             </div>
                             <div class="min-w-0">
                                 <p class="small text-secondary mb-1">Expenses This Month</p>
-                                <p class="h4 fw-bold dashboard-summary-value mb-0">$4,120.45</p>
+                                <p class="h4 fw-bold dashboard-summary-value mb-0">{{ summary["expenses_this_month"] | usd }}</p>
                             </div>
                         </div>
                     </article>
@@ -417,7 +417,7 @@
                             </div>
                             <div class="min-w-0">
                                 <p class="small text-secondary mb-1">Remaining</p>
-                                <p class="h4 fw-bold dashboard-summary-value mb-0">$2,724.75</p>
+                                <p class="h4 fw-bold dashboard-summary-value mb-0">{{ summary["remaining"] | usd }}</p>
                             </div>
                         </div>
                     </article>
@@ -433,60 +433,49 @@
                                 <p class="small text-secondary mb-0">See how your spending compares with your plan.</p>
                             </div>
 
-                            <div class="dashboard-plan-row">
-                                <div class="d-flex justify-content-between align-items-end gap-3 mb-2">
-                                    <div>
-                                        <p class="fw-semibold mb-1">Groceries</p>
-                                        <p class="small text-secondary mb-0">$540 spent of $700 planned</p>
+                            {% for item in monthly_plan["items"] %}
+                                <div class="dashboard-plan-row">
+                                    <div class="d-flex justify-content-between align-items-end gap-3 mb-2">
+                                        <div>
+                                            <p class="fw-semibold mb-1">{{ item["category_name"] }}</p>
+                                            <p class="small text-secondary mb-0">
+                                                {{ item["actual_amount"] | usd }} spent of {{ item["planned_amount"] | usd }} planned
+                                            </p>
+                                        </div>
+                                        {% if item["is_over"] %}
+                                            <span class="badge rounded-pill text-bg-danger">Over by {{ item["over_amount"] | usd }}</span>
+                                        {% else %}
+                                            <span class="small fw-semibold text-secondary">{{ item["usage_percent"] }}%</span>
+                                        {% endif %}
                                     </div>
-                                    <span class="small fw-semibold text-secondary">77%</span>
-                                </div>
-                                <div class="progress dashboard-progress" role="progressbar" aria-label="Groceries plan used" aria-valuenow="77" aria-valuemin="0" aria-valuemax="100">
-                                    <div class="progress-bar bg-primary" style="width: 77%"></div>
-                                </div>
-                            </div>
-
-                            <div class="dashboard-plan-row">
-                                <div class="d-flex justify-content-between align-items-end gap-3 mb-2">
-                                    <div>
-                                        <p class="fw-semibold mb-1">Transportation</p>
-                                        <p class="small text-secondary mb-0">$220 spent of $400 planned</p>
+                                    <div
+                                        class="progress dashboard-progress"
+                                        role="progressbar"
+                                        aria-label="{{ item['category_name'] }} plan used"
+                                        aria-valuenow="{{ item['progress_percent'] }}"
+                                        aria-valuemin="0"
+                                        aria-valuemax="100"
+                                    >
+                                        <div
+                                            class="progress-bar {{ 'bg-danger' if item['is_over'] else 'bg-primary' }}"
+                                            style="width: {{ item['progress_percent'] }}%"
+                                        ></div>
                                     </div>
-                                    <span class="small fw-semibold text-secondary">55%</span>
                                 </div>
-                                <div class="progress dashboard-progress" role="progressbar" aria-label="Transportation plan used" aria-valuenow="55" aria-valuemin="0" aria-valuemax="100">
-                                    <div class="progress-bar bg-info" style="width: 55%"></div>
-                                </div>
-                            </div>
-
-                            <div class="dashboard-plan-row">
-                                <div class="d-flex justify-content-between align-items-end gap-3 mb-2">
-                                    <div>
-                                        <p class="fw-semibold mb-1">Entertainment</p>
-                                        <p class="small text-secondary mb-0">$310 spent of $300 planned</p>
+                            {% else %}
+                                <div class="text-center py-4">
+                                    <div class="dashboard-summary-icon dashboard-summary-remaining mx-auto mb-3" aria-hidden="true">
+                                        <i class="bi bi-calendar2-check"></i>
                                     </div>
-                                    <span class="badge rounded-pill text-bg-danger">Over by $10</span>
+                                    <p class="fw-semibold mb-1">
+                                        {{ "No expense categories planned" if monthly_plan["exists"] else "No plan for " ~ monthly_plan["month_label"] }}
+                                    </p>
+                                    <p class="small text-secondary mb-0">Add a monthly plan to compare planned and actual spending.</p>
                                 </div>
-                                <div class="progress dashboard-progress" role="progressbar" aria-label="Entertainment plan exceeded" aria-valuenow="103" aria-valuemin="0" aria-valuemax="100">
-                                    <div class="progress-bar bg-danger" style="width: 100%"></div>
-                                </div>
-                            </div>
-
-                            <div class="dashboard-plan-row">
-                                <div class="d-flex justify-content-between align-items-end gap-3 mb-2">
-                                    <div>
-                                        <p class="fw-semibold mb-1">Utilities</p>
-                                        <p class="small text-secondary mb-0">$180 spent of $300 planned</p>
-                                    </div>
-                                    <span class="small fw-semibold text-secondary">60%</span>
-                                </div>
-                                <div class="progress dashboard-progress" role="progressbar" aria-label="Utilities plan used" aria-valuenow="60" aria-valuemin="0" aria-valuemax="100">
-                                    <div class="progress-bar bg-primary" style="width: 60%"></div>
-                                </div>
-                            </div>
+                            {% endfor %}
                         </div>
                         <div class="card-footer border-0 bg-transparent px-4 px-lg-5 pb-4 pt-0">
-                            <a class="dashboard-link" href="#">View full plan <span aria-hidden="true">&rarr;</span></a>
+                            <a class="dashboard-link" href="{{ url_for('plan', month=dashboard_month_value) }}">View full plan <span aria-hidden="true">&rarr;</span></a>
                         </div>
                     </article>
                 </div>
@@ -496,59 +485,26 @@
                         <div class="card-body p-4 p-lg-5">
                             <h2 class="h5 fw-bold dashboard-section-heading mb-4">Spending by Category</h2>
 
-                            <div class="dashboard-category-row" style="--category-color: #6366f1;">
-                                <div class="d-flex justify-content-between small mb-2">
-                                    <span class="fw-semibold">Housing</span>
-                                    <span class="text-secondary">42%</span>
+                            {% for category in spending_categories %}
+                                <div class="dashboard-category-row" style="--category-color: {{ category['color'] }};">
+                                    <div class="d-flex justify-content-between small mb-2">
+                                        <span class="fw-semibold">{{ category["category_name"] }}</span>
+                                        <span class="text-secondary">{{ category["percentage"] }}%</span>
+                                    </div>
+                                    <div class="dashboard-category-track" aria-hidden="true">
+                                        <div class="dashboard-category-fill" style="width: {{ category['percentage'] }}%"></div>
+                                    </div>
                                 </div>
-                                <div class="dashboard-category-track" aria-hidden="true">
-                                    <div class="dashboard-category-fill" style="width: 42%"></div>
+                            {% else %}
+                                <div class="text-center py-4">
+                                    <i class="bi bi-pie-chart fs-2 text-secondary" aria-hidden="true"></i>
+                                    <p class="small text-secondary mt-2 mb-0">No spending recorded this month.</p>
                                 </div>
-                            </div>
-
-                            <div class="dashboard-category-row" style="--category-color: #198754;">
-                                <div class="d-flex justify-content-between small mb-2">
-                                    <span class="fw-semibold">Food</span>
-                                    <span class="text-secondary">18%</span>
-                                </div>
-                                <div class="dashboard-category-track" aria-hidden="true">
-                                    <div class="dashboard-category-fill" style="width: 18%"></div>
-                                </div>
-                            </div>
-
-                            <div class="dashboard-category-row" style="--category-color: #0891b2;">
-                                <div class="d-flex justify-content-between small mb-2">
-                                    <span class="fw-semibold">Transportation</span>
-                                    <span class="text-secondary">12%</span>
-                                </div>
-                                <div class="dashboard-category-track" aria-hidden="true">
-                                    <div class="dashboard-category-fill" style="width: 12%"></div>
-                                </div>
-                            </div>
-
-                            <div class="dashboard-category-row" style="--category-color: #f59e0b;">
-                                <div class="d-flex justify-content-between small mb-2">
-                                    <span class="fw-semibold">Shopping</span>
-                                    <span class="text-secondary">9%</span>
-                                </div>
-                                <div class="dashboard-category-track" aria-hidden="true">
-                                    <div class="dashboard-category-fill" style="width: 9%"></div>
-                                </div>
-                            </div>
-
-                            <div class="dashboard-category-row" style="--category-color: #94a3b8;">
-                                <div class="d-flex justify-content-between small mb-2">
-                                    <span class="fw-semibold">Other</span>
-                                    <span class="text-secondary">19%</span>
-                                </div>
-                                <div class="dashboard-category-track" aria-hidden="true">
-                                    <div class="dashboard-category-fill" style="width: 19%"></div>
-                                </div>
-                            </div>
+                            {% endfor %}
 
                             <div class="d-flex align-items-center justify-content-between gap-3 mt-4 pt-3 border-top">
                                 <span class="small text-secondary">Monthly spending</span>
-                                <span class="fw-bold">$4,120.45</span>
+                                <span class="fw-bold">{{ monthly_spending | usd }}</span>
                             </div>
                         </div>
                     </article>
@@ -576,66 +532,28 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <tr>
-                                <td class="small text-secondary text-nowrap">Aug 24, 2026</td>
-                                <td>
-                                    <div class="d-flex align-items-center gap-2">
-                                        <div class="dashboard-activity-icon dashboard-activity-expense" aria-hidden="true"><i class="bi bi-cart3"></i></div>
-                                        <span class="fw-semibold text-nowrap">Grocery Store</span>
-                                    </div>
-                                </td>
-                                <td class="dashboard-table-secondary text-secondary small">Groceries</td>
-                                <td class="dashboard-table-secondary text-secondary small text-nowrap">Main Checking</td>
-                                <td class="fw-bold text-danger text-end text-nowrap">-$82.45</td>
-                            </tr>
-                            <tr>
-                                <td class="small text-secondary text-nowrap">Aug 23, 2026</td>
-                                <td>
-                                    <div class="d-flex align-items-center gap-2">
-                                        <div class="dashboard-activity-icon dashboard-activity-income" aria-hidden="true"><i class="bi bi-briefcase"></i></div>
-                                        <span class="fw-semibold text-nowrap">Paycheck</span>
-                                    </div>
-                                </td>
-                                <td class="dashboard-table-secondary text-secondary small">Salary</td>
-                                <td class="dashboard-table-secondary text-secondary small text-nowrap">Main Checking</td>
-                                <td class="fw-bold text-success text-end text-nowrap">+$2,500.00</td>
-                            </tr>
-                            <tr>
-                                <td class="small text-secondary text-nowrap">Aug 22, 2026</td>
-                                <td>
-                                    <div class="d-flex align-items-center gap-2">
-                                        <div class="dashboard-activity-icon dashboard-activity-expense" aria-hidden="true"><i class="bi bi-fuel-pump"></i></div>
-                                        <span class="fw-semibold text-nowrap">Gas Station</span>
-                                    </div>
-                                </td>
-                                <td class="dashboard-table-secondary text-secondary small">Transportation</td>
-                                <td class="dashboard-table-secondary text-secondary small text-nowrap">Main Checking</td>
-                                <td class="fw-bold text-danger text-end text-nowrap">-$61.00</td>
-                            </tr>
-                            <tr>
-                                <td class="small text-secondary text-nowrap">Aug 21, 2026</td>
-                                <td>
-                                    <div class="d-flex align-items-center gap-2">
-                                        <div class="dashboard-activity-icon dashboard-activity-income" aria-hidden="true"><i class="bi bi-laptop"></i></div>
-                                        <span class="fw-semibold text-nowrap">Freelance Project</span>
-                                    </div>
-                                </td>
-                                <td class="dashboard-table-secondary text-secondary small">Freelance</td>
-                                <td class="dashboard-table-secondary text-secondary small text-nowrap">Main Checking</td>
-                                <td class="fw-bold text-success text-end text-nowrap">+$450.00</td>
-                            </tr>
-                            <tr>
-                                <td class="small text-secondary text-nowrap">Aug 20, 2026</td>
-                                <td>
-                                    <div class="d-flex align-items-center gap-2">
-                                        <div class="dashboard-activity-icon dashboard-activity-expense" aria-hidden="true"><i class="bi bi-lightning-charge"></i></div>
-                                        <span class="fw-semibold text-nowrap">Electric Bill</span>
-                                    </div>
-                                </td>
-                                <td class="dashboard-table-secondary text-secondary small">Utilities</td>
-                                <td class="dashboard-table-secondary text-secondary small text-nowrap">Main Checking</td>
-                                <td class="fw-bold text-danger text-end text-nowrap">-$145.00</td>
-                            </tr>
+                            {% for activity in recent_activity %}
+                                <tr>
+                                    <td class="small text-secondary text-nowrap">{{ activity["date_label"] }}</td>
+                                    <td>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <div class="dashboard-activity-icon {{ activity['icon_class'] }}" aria-hidden="true">
+                                                <i class="bi {{ activity['icon'] }}"></i>
+                                            </div>
+                                            <span class="fw-semibold text-nowrap">{{ activity["description"] }}</span>
+                                        </div>
+                                    </td>
+                                    <td class="dashboard-table-secondary text-secondary small">{{ activity["category_name"] }}</td>
+                                    <td class="dashboard-table-secondary text-secondary small text-nowrap">{{ activity["account_name"] }}</td>
+                                    <td class="fw-bold {{ activity['amount_class'] }} text-end text-nowrap">
+                                        {{ activity["amount_prefix"] }}{{ activity["amount"] | usd }}
+                                    </td>
+                                </tr>
+                            {% else %}
+                                <tr>
+                                    <td class="text-center text-secondary py-5" colspan="5">No recent activity yet.</td>
+                                </tr>
+                            {% endfor %}
                         </tbody>
                     </table>
                 </div>
@@ -647,81 +565,62 @@
                         <h2 class="h5 fw-bold dashboard-section-heading mb-1" id="dashboard-accounts-title">Accounts</h2>
                         <p class="small text-secondary mb-0">Your money across accounts.</p>
                     </div>
-                    <a class="dashboard-link" href="#">View all accounts <span aria-hidden="true">&rarr;</span></a>
+                    <a class="dashboard-link" href="{{ url_for('accounts') }}">View all accounts <span aria-hidden="true">&rarr;</span></a>
                 </div>
 
                 <div class="row g-3">
-                    <div class="col-12 col-md-6 col-xl-4">
-                        <article class="card dashboard-card dashboard-account-card h-100">
-                            <div class="card-body p-4">
-                                <div class="d-flex align-items-start gap-3 mb-4">
-                                    <div class="dashboard-account-icon" aria-hidden="true"><i class="bi bi-bank"></i></div>
-                                    <div>
-                                        <h3 class="h6 fw-bold mb-1">Main Checking</h3>
-                                        <span class="dashboard-account-type">Checking</span>
+                    {% for account in dashboard_accounts %}
+                        <div class="col-12 col-md-6 col-xl-4">
+                            <article class="card dashboard-card dashboard-account-card h-100">
+                                <div class="card-body p-4">
+                                    <div class="d-flex align-items-start gap-3 mb-4">
+                                        <div class="dashboard-account-icon {{ 'dashboard-account-savings' if account['type'] == 'savings' else 'dashboard-account-cash' if account['type'] == 'cash' else '' }}" aria-hidden="true">
+                                            {% if account["type"] == "checking" %}
+                                                <i class="bi bi-bank"></i>
+                                            {% elif account["type"] == "savings" %}
+                                                <i class="bi bi-piggy-bank"></i>
+                                            {% elif account["type"] == "cash" %}
+                                                <i class="bi bi-cash-stack"></i>
+                                            {% elif account["type"] == "credit card" %}
+                                                <i class="bi bi-credit-card"></i>
+                                            {% elif account["type"] == "investment" %}
+                                                <i class="bi bi-graph-up-arrow"></i>
+                                            {% else %}
+                                                <i class="bi bi-wallet2"></i>
+                                            {% endif %}
+                                        </div>
+                                        <div class="min-w-0">
+                                            <h3 class="h6 fw-bold text-truncate mb-1">{{ account["name"] }}</h3>
+                                            <span class="dashboard-account-type">{{ account["type"] | title }}</span>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-end gap-3 pt-3 border-top">
+                                        <div>
+                                            <p class="small text-secondary mb-1">Bank</p>
+                                            <p class="small fw-semibold mb-0">{{ account["bank"] or "—" }}</p>
+                                        </div>
+                                        <div class="text-end">
+                                            <p class="small text-secondary mb-1">Current balance</p>
+                                            <p class="h5 fw-bold mb-0 {{ 'text-success' if account['balance'] > 0 else 'text-danger' if account['balance'] < 0 else '' }}">
+                                                {{ account["balance"] | usd }}
+                                            </p>
+                                        </div>
                                     </div>
                                 </div>
-                                <div class="d-flex justify-content-between align-items-end gap-3 pt-3 border-top">
-                                    <div>
-                                        <p class="small text-secondary mb-1">Bank</p>
-                                        <p class="small fw-semibold mb-0">Chase</p>
-                                    </div>
-                                    <div class="text-end">
-                                        <p class="small text-secondary mb-1">Current balance</p>
-                                        <p class="h5 fw-bold mb-0">$4,250.00</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </article>
-                    </div>
-
-                    <div class="col-12 col-md-6 col-xl-4">
-                        <article class="card dashboard-card dashboard-account-card h-100">
-                            <div class="card-body p-4">
-                                <div class="d-flex align-items-start gap-3 mb-4">
-                                    <div class="dashboard-account-icon dashboard-account-savings" aria-hidden="true"><i class="bi bi-piggy-bank"></i></div>
-                                    <div>
-                                        <h3 class="h6 fw-bold mb-1">Savings</h3>
-                                        <span class="dashboard-account-type">Savings</span>
-                                    </div>
-                                </div>
-                                <div class="d-flex justify-content-between align-items-end gap-3 pt-3 border-top">
-                                    <div>
-                                        <p class="small text-secondary mb-1">Bank</p>
-                                        <p class="small fw-semibold mb-0">Capital One</p>
-                                    </div>
-                                    <div class="text-end">
-                                        <p class="small text-secondary mb-1">Current balance</p>
-                                        <p class="h5 fw-bold mb-0">$12,500.00</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </article>
-                    </div>
-
-                    <div class="col-12 col-md-6 col-xl-4">
-                        <article class="card dashboard-card dashboard-account-card h-100">
-                            <div class="card-body p-4">
-                                <div class="d-flex align-items-start gap-3 mb-4">
-                                    <div class="dashboard-account-icon dashboard-account-cash" aria-hidden="true"><i class="bi bi-cash-stack"></i></div>
-                                    <div>
-                                        <h3 class="h6 fw-bold mb-1">Cash Wallet</h3>
-                                        <span class="dashboard-account-type">Cash</span>
-                                    </div>
-                                </div>
-                                <div class="d-flex justify-content-between align-items-end gap-3 pt-3 border-top">
-                                    <div>
-                                        <p class="small text-secondary mb-1">Bank</p>
-                                        <p class="small fw-semibold mb-0">&mdash;</p>
-                                    </div>
-                                    <div class="text-end">
-                                        <p class="small text-secondary mb-1">Current balance</p>
-                                        <p class="h5 fw-bold mb-0">$1,500.00</p>
-                                    </div>
+                            </article>
+                        </div>
+                    {% else %}
+                        <div class="col-12">
+                            <div class="card dashboard-card border-0">
+                                <div class="card-body text-center py-5">
+                                    <i class="bi bi-wallet2 fs-2 text-secondary" aria-hidden="true"></i>
+                                    <p class="fw-semibold mt-3 mb-1">No active accounts</p>
+                                    <p class="small text-secondary mb-3">Add an account to start tracking your money.</p>
+                                    <a class="btn btn-outline-primary" href="{{ url_for('accounts') }}">Add an account</a>
                                 </div>
                             </div>
-                        </article>
-                    </div>
+                        </div>
+                    {% endfor %}
                 </div>
             </section>
         </div>
