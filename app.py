@@ -854,3 +854,8 @@ def accounts():
         accounts_url=accounts_url,
         account_filter_url=account_filter_url
     )
+
+@app.route("/reports")
+@login_required
+def reports():
+    return render_template("reports.html")
