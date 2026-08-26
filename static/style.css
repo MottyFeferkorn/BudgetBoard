@@ -3,7 +3,6 @@ body {
     color: #212529;
 }
 
-
 /* =========================
    Brand
    ========================= */
@@ -1070,4 +1069,8 @@ main {
     .account-edit-trigger {
         opacity: 1;
     }
+}
+
+.btn.edit-action-button {
+    border-radius: 0.7rem;
 }

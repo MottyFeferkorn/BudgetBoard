@@ -24,12 +24,12 @@
 
                     <div class="settings-category-edit-actions">
                         <a
-                            class="btn btn-light settings-row-button"
+                            class="btn btn-light settings-row-button edit-action-button"
                             href="{{ url_for('settings', section='categories', category_type=category_type) }}"
                         >
                             Cancel
                         </a>
-                        <button class="btn btn-primary settings-row-button" name="action" type="submit" value="rename_category">Save</button>
+                        <button class="btn btn-primary settings-row-button edit-action-button" name="action" type="submit" value="rename_category">Save</button>
                     </div>
 
                     <button
@@ -79,12 +79,12 @@
                         autofocus
                     >
                     <a
-                        class="btn btn-light settings-row-button"
+                        class="btn btn-light settings-row-button edit-action-button"
                         href="{{ url_for('settings', section='categories', category_type=category_type) }}"
                     >
                         Cancel
                     </a>
-                    <button class="btn btn-primary settings-row-button" name="action" type="submit" value="add_category">Save</button>
+                    <button class="btn btn-primary settings-row-button edit-action-button" name="action" type="submit" value="add_category">Save</button>
                 </form>
             {% else %}
                 <a
@@ -240,12 +240,12 @@
 
                     <div class="settings-recurring-edit-actions">
                         <a
-                            class="btn btn-light settings-row-button"
+                            class="btn btn-light settings-row-button edit-action-button"
                             href="{{ url_for('settings', section='recurring', recurring_type=recurring_type) }}"
                         >
                             Cancel
                         </a>
-                        <button class="btn btn-primary settings-row-button" name="action" type="submit" value="update_recurrent">Save</button>
+                        <button class="btn btn-primary settings-row-button edit-action-button" name="action" type="submit" value="update_recurrent">Save</button>
                     </div>
 
                     <button
@@ -390,8 +390,8 @@
                                             >
                                         </div>
                                         <div class="d-flex flex-wrap justify-content-end gap-2">
-                                            <a class="btn btn-light settings-button" href="{{ url_for('settings', section='account') }}">Cancel</a>
-                                            <button class="btn btn-primary settings-button" name="action" type="submit" value="update_email">Save Changes</button>
+                                            <a class="btn btn-light settings-button edit-action-button" href="{{ url_for('settings', section='account') }}">Cancel</a>
+                                            <button class="btn btn-primary settings-button edit-action-button" name="action" type="submit" value="update_email">Save Changes</button>
                                         </div>
                                     </form>
                                 {% else %}
