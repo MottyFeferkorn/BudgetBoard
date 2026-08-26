@@ -25,7 +25,8 @@ def login_required(f):
 
 def usd(value):
     """Format value as USD."""
-    return f"${value:,.2f}"
+    sign = "-" if value < 0 else ""
+    return f"{sign}${abs(value):,.2f}"
 
 
 class ValidationError(Exception):
