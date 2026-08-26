@@ -420,15 +420,51 @@
                                     <div class="row g-3">
                                         <div class="col-12">
                                             <label class="form-label fw-semibold" for="current-password">Current password</label>
-                                            <input class="form-control settings-form-control" id="current-password" name="current_password" type="password" autocomplete="current-password" required>
+                                            <div class="input-group password-field">
+                                                <input class="form-control settings-form-control" id="current-password" name="current_password" type="password" autocomplete="current-password" required>
+                                                <button
+                                                    class="btn btn-outline-secondary password-toggle"
+                                                    type="button"
+                                                    data-password-toggle="#current-password"
+                                                    aria-label="Show password"
+                                                    aria-pressed="false"
+                                                    title="Show password"
+                                                >
+                                                    <i class="bi bi-eye" aria-hidden="true"></i>
+                                                </button>
+                                            </div>
                                         </div>
                                         <div class="col-12 col-md-6">
                                             <label class="form-label fw-semibold" for="new-password">New password</label>
-                                            <input class="form-control settings-form-control" id="new-password" name="new_password" type="password" minlength="8" autocomplete="new-password" required>
+                                            <div class="input-group password-field">
+                                                <input class="form-control settings-form-control" id="new-password" name="new_password" type="password" minlength="8" autocomplete="new-password" required>
+                                                <button
+                                                    class="btn btn-outline-secondary password-toggle"
+                                                    type="button"
+                                                    data-password-toggle="#new-password"
+                                                    aria-label="Show password"
+                                                    aria-pressed="false"
+                                                    title="Show password"
+                                                >
+                                                    <i class="bi bi-eye" aria-hidden="true"></i>
+                                                </button>
+                                            </div>
                                         </div>
                                         <div class="col-12 col-md-6">
                                             <label class="form-label fw-semibold" for="confirm-password">Confirm new password</label>
-                                            <input class="form-control settings-form-control" id="confirm-password" name="confirmation" type="password" minlength="8" autocomplete="new-password" required>
+                                            <div class="input-group password-field">
+                                                <input class="form-control settings-form-control" id="confirm-password" name="confirmation" type="password" minlength="8" autocomplete="new-password" required>
+                                                <button
+                                                    class="btn btn-outline-secondary password-toggle"
+                                                    type="button"
+                                                    data-password-toggle="#confirm-password"
+                                                    aria-label="Show password"
+                                                    aria-pressed="false"
+                                                    title="Show password"
+                                                >
+                                                    <i class="bi bi-eye" aria-hidden="true"></i>
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
 
@@ -497,4 +533,8 @@
             </div>
         </div>
     </section>
+{% endblock %}
+
+{% block scripts %}
+    <script src="{{ url_for('static', filename='password-toggle.js') }}"></script>
 {% endblock %}

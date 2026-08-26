@@ -45,18 +45,30 @@
                                     <label for="password" class="form-label fw-medium">
                                         Password
                                     </label>
-                                    <input
-                                        class="form-control form-control-lg{% if errors.get('password') %} is-invalid{% endif %}"
-                                        id="password"
-                                        name="password"
-                                        type="password"
-                                        placeholder="Create a password"
-                                        autocomplete="new-password"
-                                        aria-describedby="password-feedback"
-                                        required
-                                    >
-                                    <div class="invalid-feedback" id="password-feedback">
-                                        {{ errors.get("password", "") }}
+                                    <div class="input-group password-field has-validation">
+                                        <input
+                                            class="form-control form-control-lg{% if errors.get('password') %} is-invalid{% endif %}"
+                                            id="password"
+                                            name="password"
+                                            type="password"
+                                            placeholder="Create a password"
+                                            autocomplete="new-password"
+                                            aria-describedby="password-feedback"
+                                            required
+                                        >
+                                        <button
+                                            class="btn btn-outline-secondary password-toggle"
+                                            type="button"
+                                            data-password-toggle="#password"
+                                            aria-label="Show password"
+                                            aria-pressed="false"
+                                            title="Show password"
+                                        >
+                                            <i class="bi bi-eye" aria-hidden="true"></i>
+                                        </button>
+                                        <div class="invalid-feedback" id="password-feedback">
+                                            {{ errors.get("password", "") }}
+                                        </div>
                                     </div>
                                 </div>
 
@@ -64,18 +76,30 @@
                                     <label for="confirmation" class="form-label fw-medium">
                                         Confirm password
                                     </label>
-                                    <input
-                                        class="form-control form-control-lg{% if errors.get('confirmation') %} is-invalid{% endif %}"
-                                        id="confirmation"
-                                        name="confirmation"
-                                        type="password"
-                                        placeholder="Repeat your password"
-                                        autocomplete="new-password"
-                                        aria-describedby="confirmation-feedback"
-                                        required
-                                    >
-                                    <div class="invalid-feedback" id="confirmation-feedback">
-                                        {{ errors.get("confirmation", "") }}
+                                    <div class="input-group password-field has-validation">
+                                        <input
+                                            class="form-control form-control-lg{% if errors.get('confirmation') %} is-invalid{% endif %}"
+                                            id="confirmation"
+                                            name="confirmation"
+                                            type="password"
+                                            placeholder="Repeat your password"
+                                            autocomplete="new-password"
+                                            aria-describedby="confirmation-feedback"
+                                            required
+                                        >
+                                        <button
+                                            class="btn btn-outline-secondary password-toggle"
+                                            type="button"
+                                            data-password-toggle="#confirmation"
+                                            aria-label="Show password"
+                                            aria-pressed="false"
+                                            title="Show password"
+                                        >
+                                            <i class="bi bi-eye" aria-hidden="true"></i>
+                                        </button>
+                                        <div class="invalid-feedback" id="confirmation-feedback">
+                                            {{ errors.get("confirmation", "") }}
+                                        </div>
                                     </div>
                                 </div>
 
@@ -98,4 +122,5 @@
 
 {% block scripts %}
     <script src="{{ url_for('static', filename='register.js') }}"></script>
+    <script src="{{ url_for('static', filename='password-toggle.js') }}"></script>
 {% endblock %}

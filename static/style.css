@@ -377,6 +377,33 @@ main {
     box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.12);
 }
 
+.password-field > .form-control {
+    border-radius: 0.75rem 0 0 0.75rem;
+}
+
+.password-field > .password-toggle {
+    min-width: 3rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #6c757d;
+    background-color: #ffffff;
+    border-color: #dee2e6;
+    border-radius: 0 0.75rem 0.75rem 0;
+}
+
+.password-field > .password-toggle:hover,
+.password-field > .password-toggle:focus {
+    color: #0d6efd;
+    background-color: #f8f9fa;
+    border-color: #86b7fe;
+}
+
+.password-field > .password-toggle:focus-visible {
+    position: relative;
+    z-index: 5;
+}
+
 .auth-submit {
     min-height: 52px;
     border-radius: 12px;
